@@ -32,6 +32,7 @@ public:
 	virtual ~CMainTab();
 	void SetDatabase(CDatabase* pDatabase) { dbContext = pDatabase; }
 	CString GetSignatureName(CString id);
+	CString GetSignatureId(CString name);
 
 // Dialog Data
 #ifdef AFX_DESIGN_TIME

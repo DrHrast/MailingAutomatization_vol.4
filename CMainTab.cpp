@@ -121,16 +121,17 @@ void CMainTab::OnBnClickedButtonstart()
 		invoice_ctrl.GetWindowText(invoice_archive_path);
 		dnote_ctrl.GetWindowText(dnote_archive_path);
 
-		CString senderMail, signatureID;
+		CString senderMail, signatureName;
 		email_combo.GetWindowText(senderMail);  // Get selected value from email combo
-		signature_combo.GetWindowText(signatureID);  // Get selected value from signature 
+		signature_combo.GetWindowText(signatureName); 
+		int signatureIdDb = _ttoi(CMainTab::GetSignatureId(signatureName));// Get selected value from signature 
 		OnCbnSelchangeCombotime();
 
 		// Construct the SQL query to insert or update the last row in the GeneralSettings table
 		CString sqlQuery;
 		sqlQuery.Format(_T("INSERT INTO GeneralSettings (RootPath, InvArchPath, DnArchPath, SenderMail, SignatureId, EndTime) ")
-			_T("VALUES ('%s', '%s', '%s', '%s', '%d', '%s')"),
-			root_directory_path, invoice_archive_path, dnote_archive_path, senderMail, signatureID, time_setter);
+			_T("VALUES ('%s', '%s', '%s', '%s', '%i', '%s')"),
+			root_directory_path, invoice_archive_path, dnote_archive_path, senderMail, signatureIdDb, time_setter);
 
 	   /*AfxMessageBox(
 			root_directory_path + "\n" + invoice_archive_path +"\n"+  dnote_archive_path
@@ -174,6 +175,19 @@ void CMainTab::LoadGeneralSettingsFromDb() {
 		}
 		recordset.Close();
 	}
+}
+
+CString CMainTab::GetSignatureId(CString name) {
+	CRecordset recordset(dbContext);
+	CString sqlQuery = _T("SELECT * FROM Signatures WHERE SignatureName = " + name);
+	recordset.Open(CRecordset::forwardOnly, sqlQuery);
+
+	CString value;
+	if (!recordset.IsEOF()) {
+		recordset.GetFieldValue(_T("ID"), value);
+	}
+	recordset.Close();
+	return value;
 }
 
 CString CMainTab::GetSignatureName(CString id) {
