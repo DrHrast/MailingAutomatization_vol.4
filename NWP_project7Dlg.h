@@ -6,6 +6,7 @@
 #include "CMainTab.h"
 #include "CListTab.h"
 #include "CSettingsTab.h"
+#include <afxdb.h>
 
 // CNWPproject7Dlg dialog
 class CNWPproject7Dlg : public CDialogEx
@@ -33,6 +34,7 @@ protected:
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
+	CDatabase dbContext;
 
 public:
 	afx_msg void OnTcnSelChangeIdPreviewPrev(NMHDR* pNMHDR, LRESULT* pResult);
@@ -40,6 +42,11 @@ public:
 	CMainTab main_tab;
 	CListTab list_tab;
 	CSettingsTab settings_tab;
+	BOOL ConnectToDatabase();
+	void CloseDatabase();
+	CDatabase* GetDataBase();
 
 	afx_msg void OnSelChangeTabControl(NMHDR* pNMHDR, LRESULT* pResult);
+
+private:
 };

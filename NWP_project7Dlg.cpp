@@ -47,6 +47,17 @@ BOOL CNWPproject7Dlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
+	//Database connection
+	if (!ConnectToDatabase()) {
+		AfxMessageBox(_T("Unable to connect to database. Application will close."));
+		EndDialog(IDCANCEL);
+		return FALSE;
+	}
+
+	main_tab.SetDatabase(GetDataBase());
+	list_tab.SetDatabase(GetDataBase());
+	settings_tab.SetDatabase(GetDataBase());
+
 	// Set the minimize and maximize buttons
 	LONG style = GetWindowLong(this->GetSafeHwnd(), GWL_STYLE);
 	style |= WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU;
@@ -163,4 +174,31 @@ void CNWPproject7Dlg::OnSelChangeTabControl(NMHDR* pNMHDR, LRESULT* pResult) {
 
 void CNWPproject7Dlg::OnTcnSelChangeIdPreviewPrev(NMHDR* pNMHDR, LRESULT* pResult) {
 	*pResult = 0;
+}
+
+BOOL CNWPproject7Dlg::ConnectToDatabase() {
+	try
+	{
+		if (!dbContext.IsOpen()) {
+			dbContext.Open(_T("PhoenixMailingDB"), FALSE, FALSE, _T("ODBC;DSN=PhoenixMailingDB"));
+			//AfxMessageBox(_T("Database connected successfully"));
+		}
+			return TRUE;
+	}
+	catch (CDBException* e)
+	{
+		AfxMessageBox(_T("Database connection failed: ") + e->m_strError);
+		e->Delete();
+		return FALSE;
+	}
+}
+
+void CNWPproject7Dlg::CloseDatabase() {
+	if (dbContext.IsOpen()) {
+		dbContext.Close();
+	}
+}
+
+CDatabase* CNWPproject7Dlg::GetDataBase() {
+	return &dbContext;
 }

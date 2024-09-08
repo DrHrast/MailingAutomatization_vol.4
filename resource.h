@@ -8,15 +8,14 @@
 #define IDD_SETTINGSTAB                 105
 #define IDR_MAINFRAME                   128
 #define IDC_TABCONTROL                  1000
-#define IDC_MFCEDITBROWSE1              1003
-#define IDC_MFCEDITBROWSE2              1004
-#define IDC_MFCEDITBROWSE3              1005
-#define IDC_COMBOBOXEX1                 1006
-#define IDC_COMBOBOXEX2                 1007
+#define IDC_BROWSEROOTDIRECTORY         1003
+#define IDC_BROWSEIARCHIVE              1004
+#define IDC_BROWSEDNARCHIVE             1005
+#define IDC_COMBOBOXSENDERMAIL          1006
+#define IDC_COMBOBOXSIGNATUES           1007
 #define IDC_RADIO1                      1009
 #define IDC_RADIO2                      1010
 #define IDC_RADIO3                      1011
-#define IDC_COMBOBOXEX3                 1012
 #define IDC_BUTTON1                     1013
 #define IDC_BUTTON2                     1014
 #define IDC_BUTTON3                     1015
@@ -27,7 +26,14 @@
 #define IDC_EDIT5                       1020
 #define IDC_EDIT6                       1021
 #define IDC_BUTTON4                     1022
-#define IDC_LIST1                       1023
+#define IDC_LIST3                       1025
+#define IDC_BUTTONSTART                 1026
+#define IDC_BUTTONSTOP                  1027
+#define IDC_COMBOTIME                   1030
+#define IDC_MAINTABGROUP                1031
+#define IDC_MAINTABGROUP1               1032
+#define IDC_MAINTABGROUP2               1033
+#define IDC_MAINTABGROUP3               1034
 
 // Next default values for new objects
 // 
@@ -35,7 +41,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        136
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1024
+#define _APS_NEXT_CONTROL_VALUE         1031
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
