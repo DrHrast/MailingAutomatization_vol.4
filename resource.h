@@ -24,8 +24,11 @@
 #define IDC_EDIT3                       1018
 #define IDC_EDIT4                       1019
 #define IDC_EDIT5                       1020
+#define IDC_EDITUPPRIM                  1020
 #define IDC_EDIT6                       1021
+#define IDC_EDITUPSEC                   1021
 #define IDC_BUTTON4                     1022
+#define IDC_BUTTONUPCLEAR               1022
 #define IDC_LIST3                       1025
 #define IDC_BUTTONSTART                 1026
 #define IDC_BUTTONSTOP                  1027
@@ -33,8 +36,19 @@
 #define IDC_MAINTABGROUP                1031
 #define IDC_CUSTOM1                     1031
 #define IDC_MAINTABGROUP1               1032
+#define IDC_LISTBUYERS                  1032
 #define IDC_MAINTABGROUP2               1033
+#define IDC_EDITADDVAT                  1033
 #define IDC_MAINTABGROUP3               1034
+#define IDC_EDITADDPRIM                 1034
+#define IDC_EDITADDSEC                  1035
+#define IDC_BUTTONADDADD                1036
+#define IDC_BUTTONADDCLEAR              1037
+#define IDC_EDITUPVAT                   1038
+#define IDC_BUTTONUPADD                 1039
+#define IDC_EDITADDSNAME                1040
+#define IDC_EDITADDVAT3                 1041
+#define IDC_EDITADDNAME                 1041
 
 // Next default values for new objects
 // 
@@ -42,7 +56,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        136
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1032
+#define _APS_NEXT_CONTROL_VALUE         1040
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

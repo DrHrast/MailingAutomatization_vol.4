@@ -11,11 +11,20 @@ class CListTab : public CDialogEx
 
 private:
 	CDatabase *dbContext;
+	CListCtrl buyerList;
+	CEdit addVatCtrl;
+	CEdit addPrimaryMailCtrl;
+	CEdit addSecondaryMailCtrl;
+	CEdit addShortNameCtrl;
+	CEdit addNameCtrl;
 
 public:
 	CListTab(CWnd* pParent = nullptr);   // standard constructor
 	virtual ~CListTab();
 	void SetDatabase(CDatabase* pDatabase) { dbContext = pDatabase; }
+	void FillListDialog();
+	void AddNewUserToDb();
+	void ClearFields();
 
 // Dialog Data
 #ifdef AFX_DESIGN_TIME
@@ -26,4 +35,9 @@ protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 
 	DECLARE_MESSAGE_MAP()
+
+public:
+	virtual BOOL CListTab::OnInitDialog();
+	afx_msg void OnBnClickedButtonaddadd();
+	afx_msg void OnBnClickedButtonaddclear();
 };
