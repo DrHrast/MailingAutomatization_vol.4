@@ -29,15 +29,23 @@ BOOL CMainTab::OnInitDialog() {
 	m_groupBoxBrush.CreateSolidBrush(RGB(173, 216, 230));
 
 	//TODO: For now manual selection and fill, but later from database
-	CMainTab::LoadGeneralSettingsFromDb();
+	GetAllSignatures();
+	for (int i = 0; i < signaturesList.size(); ++i) {
+		signature_combo.AddString((signaturesList[i].SignatureName));
+	}
+	LoadGeneralSettingsFromDb();
 
 	email_combo.AddString(_T("pehuljek@vsite.hr"));
 	email_combo.AddString(_T("soperkov@vsite.hr"));
 	email_combo.AddString(_T("petar.huljek@biomax.hr"));
-	signature_combo.AddString(_T("Standard"));
+
+	//From db load
+	/*signature_combo.AddString(_T("Standard"));
 	signature_combo.AddString(_T("StandardPh"));
 	signature_combo.AddString(_T("StandardSP"));
-	signature_combo.AddString(_T("PhBiomStandard"));
+	signature_combo.AddString(_T("PhBiomStandard"));*/
+
+
 	time_combo.AddString(_T("14:00"));
 	time_combo.AddString(_T("14:15"));
 	time_combo.AddString(_T("14:30"));
@@ -45,8 +53,10 @@ BOOL CMainTab::OnInitDialog() {
 	time_combo.AddString(_T("15:15"));
 	time_combo.AddString(_T("15:45"));
 	time_combo.AddString(_T("16:00"));
+
+	//checks
 	time_radio1.SetCheck(2);
-	signature_combo.SetCurSel(0);
+	//signature_combo.SetCurSel(0);
 	email_combo.SetCurSel(0);
 
 	/*mainTab_group.SetBackgroundColor(RGB(173, 216, 230));*/
@@ -122,16 +132,14 @@ void CMainTab::OnBnClickedButtonstart()
 		dnote_ctrl.GetWindowText(dnote_archive_path);
 
 		CString senderMail, signatureName;
-		email_combo.GetWindowText(senderMail);  // Get selected value from email combo
-		signature_combo.GetWindowText(signatureName); 
-		int signatureIdDb = _ttoi(CMainTab::GetSignatureId(signatureName));// Get selected value from signature 
+		email_combo.GetWindowText(senderMail);
 		OnCbnSelchangeCombotime();
 
 		// Construct the SQL query to insert or update the last row in the GeneralSettings table
 		CString sqlQuery;
 		sqlQuery.Format(_T("INSERT INTO GeneralSettings (RootPath, InvArchPath, DnArchPath, SenderMail, SignatureId, EndTime) ")
 			_T("VALUES ('%s', '%s', '%s', '%s', '%i', '%s')"),
-			root_directory_path, invoice_archive_path, dnote_archive_path, senderMail, signatureIdDb, time_setter);
+			root_directory_path, invoice_archive_path, dnote_archive_path, senderMail, signaturesList[signature_combo.GetCurSel()].id, time_setter);
 
 	   /*AfxMessageBox(
 			root_directory_path + "\n" + invoice_archive_path +"\n"+  dnote_archive_path
@@ -160,18 +168,23 @@ void CMainTab::LoadGeneralSettingsFromDb() {
 
 		if (!recordset.IsEOF()) {
 			CString senderMail;
+			CDBVariant idVariant;
 
 			recordset.GetFieldValue(_T("RootPath"), root_directory_path);
 			recordset.GetFieldValue(_T("InvArchPath"), invoice_archive_path);
 			recordset.GetFieldValue(_T("DnArchPath"), dnote_archive_path);
 			recordset.GetFieldValue(_T("SenderMail"), senderMail);
-			recordset.GetFieldValue(_T("SignatureId"), signatureId);
+			recordset.GetFieldValue(_T("SignatureId"), idVariant);
+
+			signatureId = idVariant.m_iVal;
 
 			root_ctrl.SetWindowText(root_directory_path);
 			invoice_ctrl.SetWindowText(invoice_archive_path);
 			dnote_ctrl.SetWindowText(dnote_archive_path);
 			email_combo.SelectString(-1, senderMail);
-			signature_combo.SelectString(-1, CMainTab::GetSignatureName(signatureId));
+
+			//TODO: Figure out why select is not working.
+			signature_combo.SelectString(-1, GetSignatureName(signatureId));
 		}
 		recordset.Close();
 	}
@@ -190,15 +203,40 @@ CString CMainTab::GetSignatureId(CString name) {
 	return value;
 }
 
-CString CMainTab::GetSignatureName(CString id) {
+CString CMainTab::GetSignatureName(int id) {
+	CString value;
+
+	for (int i = 0; i < signaturesList.size(); ++i)
+	{
+		if (signaturesList[i].id == id) {
+			value = signaturesList[i].SignatureName;
+			return value;
+		}
+	}
+}
+
+void CMainTab::GetAllSignatures() {
 	CRecordset recordset(dbContext);
-	CString sqlQuery = _T("SELECT * FROM Signatures WHERE id = " + id);
+	CString sqlQuery = _T("SELECT * FROM Signatures");
 	recordset.Open(CRecordset::forwardOnly, sqlQuery);
 
-	if (!recordset.IsEOF()) {
-		CString value;
-		recordset.GetFieldValue(_T("SignatureName"), value);
-		return value;
+	while (!recordset.IsEOF()) {
+		SignaturesFromDB signatureRow;
+
+		CDBVariant idVariant;
+		CString signatureName, signatureContent;
+
+		recordset.GetFieldValue(_T("ID"), idVariant);
+		recordset.GetFieldValue(_T("SignatureName"), signatureName);
+		recordset.GetFieldValue(_T("Signature"), signatureContent);
+
+		signatureRow.id = idVariant.m_iVal;
+		signatureRow.SignatureName = signatureName;
+		signatureRow.SignatureContent = signatureContent;
+
+		signaturesList.push_back(signatureRow);
+
+		recordset.MoveNext();
 	}
 	recordset.Close();
 }

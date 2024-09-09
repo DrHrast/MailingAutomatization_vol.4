@@ -2,7 +2,14 @@
 #include "afxdialogex.h"
 #include <afxcontrolbars.h>
 #include <afxdb.h>
+#include <vector>
 
+struct SignaturesFromDB
+{
+	int id;
+	CString SignatureName;
+	CString SignatureContent;
+};
 
 // CMainTab dialog
 
@@ -25,14 +32,16 @@ private:
 	CButton time_radio2;
 	CButton time_radio3;
 	CString time_setter;
-	CString signatureId;
+	int signatureId;
+	std::vector<SignaturesFromDB> signaturesList;
 
 public:
 	CMainTab(CWnd* pParent = nullptr);   // standard constructor
 	virtual ~CMainTab();
 	void SetDatabase(CDatabase* pDatabase) { dbContext = pDatabase; }
-	CString GetSignatureName(CString id);
+	CString GetSignatureName(int id);
 	CString GetSignatureId(CString name);
+	void GetAllSignatures();
 
 // Dialog Data
 #ifdef AFX_DESIGN_TIME
