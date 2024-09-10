@@ -69,7 +69,7 @@ void CListTab::FillListDialog() {
 		buyerList.SetItemText(index, 1, name);
 		buyerList.SetItemText(index, 2, primEmail);
 		buyerList.SetItemText(index, 3, secEmail);
-
+	
 		recordset.MoveNext();
 		index++;
 	}
