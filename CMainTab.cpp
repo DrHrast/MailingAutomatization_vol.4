@@ -304,15 +304,20 @@ void CMainTab::OnBtnClickedRadioTime()
 	else {
 		time_combo.ShowWindow(SW_HIDE);
 		if (time_radio1.GetCheck() == BST_CHECKED) {
-			time_radio1.GetWindowText(time_setter);
+			time_setter = _T("15:00");
+			time_setter += _T(":00");
 		}
 		else {
-			time_radio2.GetWindowText(time_setter);
+			time_setter = _T("15:30");
+			time_setter += _T(":00");
 		}
 	}
 }
 
 void CMainTab::OnCbnSelchangeCombotime()
 {
-	time_combo.GetWindowText(time_setter);
+	int selected = -1;
+	selected = time_combo.GetCurSel();
+	time_combo.GetLBText(selected, time_setter);
+	time_setter += _T(":00");
 }

@@ -36,6 +36,7 @@
 #define IDC_EDITUPSEC                   1021
 #define IDC_BUTTON4                     1022
 #define IDC_BUTTONUPCLEAR               1022
+#define IDC_BUTTON5                     1023
 #define IDC_LIST3                       1025
 #define IDC_BUTTONSTART                 1026
 #define IDC_BUTTONSTOP                  1027
@@ -57,8 +58,8 @@
 #define IDC_EDITADDVAT3                 1041
 #define IDC_EDITADDNAME                 1041
 #define IDC_LIST1                       1042
+#define IDC_LISTRECEIVER                1042
 #define IDC_CHECKCOMBOBOXRECEIVER       1043
-#define IDC_MFCVSLISTBOX1               1043
 
 // Next default values for new objects
 // 

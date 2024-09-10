@@ -23,9 +23,49 @@ CSettingsTab::~CSettingsTab()
 {
 }
 
-BOOL CSettingsTab::OnInitDialog() {
+void CSettingsTab::FIllListDialog() {
+	receiverListCtrl.ResetContent();
+	for (int i = 0; i < receiverList.size(); ++i) {
+		receiverListCtrl.InsertString(i, receiverList[i].email);
+	}
+}
 
+void CSettingsTab::PopulateReceiverList()
+{
+	receiverList.clear();
+	CRecordset recordset(dbContext);
+	CString sqlQuery = _T("SELECT * FROM ReceiverMails");
+	recordset.Open(CRecordset::forwardOnly, sqlQuery);
+
+	while (!recordset.IsEOF()) {
+		ReceiverEmails emailRow;
+
+		CDBVariant idVariant;
+		CString email;
+
+		recordset.GetFieldValue(_T("Id"), idVariant);
+		recordset.GetFieldValue(_T("Email"), email);
+
+		emailRow.id = idVariant.m_iVal;
+		emailRow.email = email;
+
+		receiverList.push_back(emailRow);
+
+		recordset.MoveNext();
+	}
+	recordset.Close();
+}
+
+BOOL CSettingsTab::OnInitDialog() {
 	CDialogEx::OnInitDialog();
+
+	if (dbContext == nullptr || !dbContext->IsOpen()) {
+		AfxMessageBox(_T("Database context is not set or not open in CSettingsTab!"));
+		return FALSE;  // Cancel dialog if the database is not available
+	}
+
+	PopulateReceiverList();
+	FIllListDialog();
 
 	return TRUE;
 }
@@ -41,6 +81,7 @@ void CSettingsTab::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDITADDRECEIVERMAIL, receiverMailCtrl);
 	DDX_Control(pDX, IDC_BUTTONADDSENDERMAIL, addSenderMailCtrl);
 	DDX_Control(pDX, IDC_BUTTONADDRECEIVERMAIL, addReceiverMailCtrl);
+	DDX_Control(pDX, IDC_LISTRECEIVER, receiverListCtrl);
 }
 
 
@@ -48,11 +89,12 @@ BEGIN_MESSAGE_MAP(CSettingsTab, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTONADDSIGNATURE, &CSettingsTab::OnBnClickedButtonaddsignature)
 	ON_BN_CLICKED(IDC_BUTTONADDSENDERMAIL, &CSettingsTab::OnBnClickedButtonaddsendermail)
 	ON_BN_CLICKED(IDC_BUTTONADDRECEIVERMAIL, &CSettingsTab::OnBnClickedButtonaddreceivermail)
+	ON_BN_CLICKED(IDC_BUTTON4, &CSettingsTab::OnBnClickedButton4)
+	ON_BN_CLICKED(IDC_BUTTON5, &CSettingsTab::OnBnClickedButton5)
 END_MESSAGE_MAP()
 
 
 // CSettingsTab message handlers
-
 
 void CSettingsTab::OnBnClickedButtonaddsignature()
 {
@@ -143,4 +185,56 @@ void CSettingsTab::OnBnClickedButtonaddreceivermail()
 			AfxMessageBox(_T("Failed to save receiver: \nFill all fields."));
 		}
 	}
+	PopulateReceiverList();
+	FIllListDialog();
+}
+
+
+void CSettingsTab::OnBnClickedButton4()
+{
+	// Get the selected index from the CListBox
+	int selectedIndex = receiverListCtrl.GetCurSel();
+
+	if (selectedIndex != LB_ERR) {  // If a valid item is selected
+		CString selectedEmail;
+		receiverListCtrl.GetText(selectedIndex, selectedEmail);
+
+		int id = -1;
+		for (int i = 0; i < receiverList.size(); ++i) {
+			if (receiverList[i].email == selectedEmail) {
+				id = receiverList[i].id;
+				break;
+			}
+		}
+
+		if (id != -1) {  // If a valid ID was found
+			CString sqlQuery;
+			sqlQuery.Format(_T("DELETE FROM ReceiverMails WHERE Id = %d"), id);
+
+			try {
+				dbContext->ExecuteSQL(sqlQuery);
+				AfxMessageBox(_T("Receiver removed successfully!"));
+			}
+			catch (CDBException* e) {
+				AfxMessageBox(_T("Failed to remove receiver: ") + e->m_strError);
+				e->Delete();
+			}
+		}
+	}
+	else {
+		AfxMessageBox(_T("Please select an email address\nand then click the '-' button."));
+	}
+
+	// Refresh the list after deletion
+	PopulateReceiverList();
+	FIllListDialog();
+}
+
+
+
+void CSettingsTab::OnBnClickedButton5()
+{
+	AfxMessageBox(_T("To remove receiver email address from the list\n")
+		_T("select one of the shown email addresses and\n")
+		_T("click '-' button."));
 }

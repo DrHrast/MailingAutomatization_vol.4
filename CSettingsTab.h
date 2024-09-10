@@ -1,6 +1,12 @@
 #pragma once
 #include "afxdialogex.h"
 #include <afxdb.h>
+#include <vector>
+
+struct ReceiverEmails {
+	int id;
+	CString email;
+};
 
 
 // CSettingsTab dialog
@@ -18,11 +24,15 @@ private:
 	CEdit receiverMailCtrl;
 	CButton addSenderMailCtrl;
 	CButton addReceiverMailCtrl;
+	CListBox receiverListCtrl;
+	std::vector< ReceiverEmails> receiverList;
 
 public:
 	CSettingsTab(CWnd* pParent = nullptr);   // standard constructor
 	virtual ~CSettingsTab();
 	void SetDatabase(CDatabase* pDatabase) { dbContext = pDatabase; }
+	void PopulateReceiverList();
+	void FIllListDialog();
 	BOOL OnInitDialog();
 
 // Dialog Data
@@ -38,4 +48,6 @@ public:
 	afx_msg void OnBnClickedButtonaddsignature();
 	afx_msg void OnBnClickedButtonaddsendermail();
 	afx_msg void OnBnClickedButtonaddreceivermail();
+	afx_msg void OnBnClickedButton4();
+	afx_msg void OnBnClickedButton5();
 };
