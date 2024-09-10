@@ -31,7 +31,8 @@ BOOL CMainTab::OnInitDialog() {
 	//TODO: For now manual selection and fill, but later from database
 	GetAllSignatures();
 	for (int i = 0; i < signaturesList.size(); ++i) {
-		signature_combo.AddString((signaturesList[i].SignatureName));
+		//signature_combo.AddString((signaturesList[i].SignatureName));
+		signature_combo.InsertString(i, (signaturesList[i].SignatureName));
 	}
 	LoadGeneralSettingsFromDb();
 
@@ -183,8 +184,10 @@ void CMainTab::LoadGeneralSettingsFromDb() {
 			dnote_ctrl.SetWindowText(dnote_archive_path);
 			email_combo.SelectString(-1, senderMail);
 
-			//TODO: Figure out why select is not working.
-			signature_combo.SelectString(-1, GetSignatureName(signatureId));
+			//DID_IT: Figure out why select is not working. It's sorting them by alphabet
+			//AddString("string") sorts by alphabet and InsertString("") is set by index
+			SelectSignatureCombo(signatureId);
+			//signature_combo.SelectString(-1, GetSignatureName(signatureId));
 		}
 		recordset.Close();
 	}
@@ -203,14 +206,16 @@ CString CMainTab::GetSignatureId(CString name) {
 	return value;
 }
 
-CString CMainTab::GetSignatureName(int id) {
-	CString value;
+void CMainTab::SelectSignatureCombo(int id) {
+	//CString value;
 
 	for (int i = 0; i < signaturesList.size(); ++i)
 	{
 		if (signaturesList[i].id == id) {
-			value = signaturesList[i].SignatureName;
-			return value;
+			signature_combo.SetCurSel(i);
+			//value = signaturesList[i].SignatureName;
+			//return value;
+			return;
 		}
 	}
 }

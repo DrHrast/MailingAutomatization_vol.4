@@ -183,6 +183,7 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="CCheckComboBox.h" />
     <ClInclude Include="CListTab.h" />
     <ClInclude Include="CMainTab.h" />
     <ClInclude Include="CSettingsTab.h" />
@@ -190,10 +191,12 @@
     <ClInclude Include="NWP_project7.h" />
     <ClInclude Include="NWP_project7Dlg.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="ReceiverCheckComboBox.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CCheckComboBox.cpp" />
     <ClCompile Include="CListTab.cpp" />
     <ClCompile Include="CMainTab.cpp" />
     <ClCompile Include="CSettingsTab.cpp" />
@@ -205,6 +208,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="ReceiverCheckComboBox.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="NWPproject7.rc" />

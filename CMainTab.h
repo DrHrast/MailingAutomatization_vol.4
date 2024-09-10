@@ -39,7 +39,7 @@ public:
 	CMainTab(CWnd* pParent = nullptr);   // standard constructor
 	virtual ~CMainTab();
 	void SetDatabase(CDatabase* pDatabase) { dbContext = pDatabase; }
-	CString GetSignatureName(int id);
+	void SelectSignatureCombo(int id);
 	CString GetSignatureId(CString name);
 	void GetAllSignatures();
 

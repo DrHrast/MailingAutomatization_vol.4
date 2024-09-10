@@ -49,14 +49,16 @@
 #define IDC_EDITADDSNAME                1040
 #define IDC_EDITADDVAT3                 1041
 #define IDC_EDITADDNAME                 1041
+#define IDC_LIST1                       1042
+#define IDC_CHECKCOMBOBOXRECEIVER		1043
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        136
+#define _APS_NEXT_RESOURCE_VALUE        137
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1040
+#define _APS_NEXT_CONTROL_VALUE         1043
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
