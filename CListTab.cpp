@@ -34,9 +34,18 @@ void CListTab::DoDataExchange(CDataExchange* pDX)
 	CDialogEx::DoDataExchange(pDX);
 
 	DDX_Control(pDX, IDC_LISTBUYERS, buyerList);
+	DDX_Control(pDX, IDC_EDITADDVAT, addVatCtrl);
+	DDX_Control(pDX, IDC_EDITADDNAME, addNameCtrl);
+	DDX_Control(pDX, IDC_EDITADDSNAME, addShortNameCtrl);
+	DDX_Control(pDX, IDC_EDITADDPRIM, addPrimaryMailCtrl);
+	DDX_Control(pDX, IDC_EDITADDSEC, addSecondaryMailCtrl);
+	DDX_Control(pDX, IDC_EDITUPVAT, updateVatCtrl);
+	DDX_Control(pDX, IDC_EDITUPPRIM, updatePrimaryMailCtrl);
+	DDX_Control(pDX, IDC_EDITUPSEC, updateSecondaryMailCtrl);
 }
 
 void CListTab::FillListDialog() {
+	buyerList.DeleteAllItems();
 	CRecordset recordset(dbContext);
 	CString sqlQuery = _T("SELECT Vat, Name, Primary_email, Secondary_email FROM Buyers");
 	recordset.Open(CRecordset::forwardOnly, sqlQuery);
@@ -67,7 +76,7 @@ void CListTab::FillListDialog() {
 	recordset.Close();
 }
 
-void CListTab::AddNewUserToDb() {
+void CListTab::AddNewBuyerToDb() {
 	CString vat, primaryEmail, secondaryEmail, shortName, name;
 	//TODO: something ain't right
 	addVatCtrl.GetWindowText(vat);
@@ -76,11 +85,11 @@ void CListTab::AddNewUserToDb() {
 	addPrimaryMailCtrl.GetWindowText(primaryEmail);
 	addSecondaryMailCtrl.GetWindowText(secondaryEmail);
 
-	vat.Replace(_T("'"), _T("''"));
+	/*vat.Replace(_T("'"), _T("''"));
 	primaryEmail.Replace(_T("'"), _T("''"));
 	secondaryEmail.Replace(_T("'"), _T("''"));
 	shortName.Replace(_T("'"), _T("''"));
-	name.Replace(_T("'"), _T("''"));
+	name.Replace(_T("'"), _T("''"));*/
 
 	CString sqlQuery;
 	sqlQuery.Format(_T("INSERT INTO Buyers (Vat, ShortName, Name, Primary_email, Secondary_email) ")
@@ -99,6 +108,29 @@ void CListTab::AddNewUserToDb() {
 	}
 }
 
+void CListTab::UpdateBuyer() {
+	CString vat, primaryEmail, secondaryEmail;
+	updateVatCtrl.GetWindowText(vat);
+	updatePrimaryMailCtrl.GetWindowText(primaryEmail);
+	updateSecondaryMailCtrl.GetWindowText(secondaryEmail);
+
+	CString sqlQuery;
+	sqlQuery.Format(_T("UPDATE Buyers SET Primary_email = '%s', Secondary_email = '%s' ")
+		_T("WHERE Vat = '%s'"),
+		primaryEmail, secondaryEmail, vat);
+
+	try
+	{
+		dbContext->ExecuteSQL(sqlQuery);
+		AfxMessageBox(_T("Settings updated successfully!"));
+	}
+	catch (CDBException* e)
+	{
+		AfxMessageBox(_T("Failed to update settings: ") + e->m_strError);
+		e->Delete();
+	}
+}
+
 void CListTab::ClearFields() {
 	addVatCtrl.SetWindowText(_T(""));
 	addShortNameCtrl.SetWindowText(_T(""));
@@ -111,6 +143,8 @@ void CListTab::ClearFields() {
 BEGIN_MESSAGE_MAP(CListTab, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTONADDADD, &CListTab::OnBnClickedButtonaddadd)
 	ON_BN_CLICKED(IDC_BUTTONADDCLEAR, &CListTab::OnBnClickedButtonaddclear)
+	ON_BN_CLICKED(IDC_BUTTONUPCLEAR, &CListTab::OnBnClickedButtonupclear)
+	ON_BN_CLICKED(IDC_BUTTONUPADD, &CListTab::OnBnClickedButtonupadd)
 END_MESSAGE_MAP()
 
 
@@ -119,13 +153,27 @@ END_MESSAGE_MAP()
 
 void CListTab::OnBnClickedButtonaddadd()
 {
-	AddNewUserToDb();
+	AddNewBuyerToDb();
 	ClearFields();
 	FillListDialog();
 }
 
 
 void CListTab::OnBnClickedButtonaddclear()
+{
+	ClearFields();
+}
+
+
+void CListTab::OnBnClickedButtonupadd()
+{
+	UpdateBuyer();
+	ClearFields();
+	FillListDialog();
+}
+
+
+void CListTab::OnBnClickedButtonupclear()
 {
 	ClearFields();
 }

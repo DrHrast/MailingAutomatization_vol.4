@@ -17,13 +17,17 @@ private:
 	CEdit addSecondaryMailCtrl;
 	CEdit addShortNameCtrl;
 	CEdit addNameCtrl;
+	CEdit updateVatCtrl;
+	CEdit updatePrimaryMailCtrl;
+	CEdit updateSecondaryMailCtrl;
 
 public:
 	CListTab(CWnd* pParent = nullptr);   // standard constructor
 	virtual ~CListTab();
 	void SetDatabase(CDatabase* pDatabase) { dbContext = pDatabase; }
 	void FillListDialog();
-	void AddNewUserToDb();
+	void AddNewBuyerToDb();
+	void UpdateBuyer();
 	void ClearFields();
 
 // Dialog Data
@@ -40,4 +44,6 @@ public:
 	virtual BOOL CListTab::OnInitDialog();
 	afx_msg void OnBnClickedButtonaddadd();
 	afx_msg void OnBnClickedButtonaddclear();
+	afx_msg void OnBnClickedButtonupclear();
+	afx_msg void OnBnClickedButtonupadd();
 };
