@@ -28,17 +28,23 @@ BOOL CMainTab::OnInitDialog() {
 
 	m_groupBoxBrush.CreateSolidBrush(RGB(173, 216, 230));
 
-	//TODO: For now manual selection and fill, but later from database
+	//DID_IT: For now manual selection and fill, but later from database
 	GetAllSignatures();
 	for (int i = 0; i < signaturesList.size(); ++i) {
 		//signature_combo.AddString((signaturesList[i].SignatureName));
 		signature_combo.InsertString(i, (signaturesList[i].SignatureName));
 	}
+
+	GetAllSenderMails();
+	for (int i = 0; i < senderList.size(); ++i) {
+		email_combo.InsertString(i, (senderList[i].email));
+	}
 	LoadGeneralSettingsFromDb();
 
-	email_combo.AddString(_T("pehuljek@vsite.hr"));
+	//From db load
+	/*email_combo.AddString(_T("pehuljek@vsite.hr"));
 	email_combo.AddString(_T("soperkov@vsite.hr"));
-	email_combo.AddString(_T("petar.huljek@biomax.hr"));
+	email_combo.AddString(_T("petar.huljek@biomax.hr"));*/
 
 	//From db load
 	/*signature_combo.AddString(_T("Standard"));
@@ -58,7 +64,7 @@ BOOL CMainTab::OnInitDialog() {
 	//checks
 	time_radio1.SetCheck(2);
 	//signature_combo.SetCurSel(0);
-	email_combo.SetCurSel(0);
+	//email_combo.SetCurSel(0);
 
 	/*mainTab_group.SetBackgroundColor(RGB(173, 216, 230));*/
 
@@ -218,6 +224,30 @@ void CMainTab::SelectSignatureCombo(int id) {
 			return;
 		}
 	}
+}
+
+void CMainTab::GetAllSenderMails() {
+	CRecordset recordset(dbContext);
+	CString sqlQuery = _T("SELECT * FROM SenderMails");
+	recordset.Open(CRecordset::forwardOnly, sqlQuery);
+
+	while (!recordset.IsEOF()) {
+		SenderEmails emailRow;
+
+		CDBVariant idVariant;
+		CString email;
+
+		recordset.GetFieldValue(_T("Id"), idVariant);
+		recordset.GetFieldValue(_T("Email"), email);
+
+		emailRow.id = idVariant.m_iVal;
+		emailRow.email = email;
+
+		senderList.push_back(emailRow);
+
+		recordset.MoveNext();
+	}
+	recordset.Close();
 }
 
 void CMainTab::GetAllSignatures() {

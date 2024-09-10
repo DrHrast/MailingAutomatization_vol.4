@@ -11,6 +11,11 @@ struct SignaturesFromDB
 	CString SignatureContent;
 };
 
+struct SenderEmails {
+	int id;
+	CString email;
+};
+
 // CMainTab dialog
 
 class CMainTab : public CDialogEx
@@ -34,6 +39,7 @@ private:
 	CString time_setter;
 	int signatureId;
 	std::vector<SignaturesFromDB> signaturesList;
+	std::vector< SenderEmails> senderList;
 
 public:
 	CMainTab(CWnd* pParent = nullptr);   // standard constructor
@@ -42,6 +48,7 @@ public:
 	void SelectSignatureCombo(int id);
 	CString GetSignatureId(CString name);
 	void GetAllSignatures();
+	void GetAllSenderMails();
 
 // Dialog Data
 #ifdef AFX_DESIGN_TIME
