@@ -48,6 +48,9 @@
     <ClInclude Include="ReceiverCheckComboBox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FIleHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="NWP_project7.cpp">
@@ -72,6 +75,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ReceiverCheckComboBox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FIleHandler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -3,6 +3,7 @@
 #include <afxcontrolbars.h>
 #include <afxdb.h>
 #include <vector>
+#include <string>
 
 struct SignaturesFromDB
 {
@@ -24,25 +25,28 @@ class CMainTab : public CDialogEx
 
 private:
 	CDatabase* dbContext;
-	CString root_directory_path;
-	CString invoice_archive_path;
-	CString dnote_archive_path;
 	CMFCEditBrowseCtrl root_ctrl;
 	CMFCEditBrowseCtrl invoice_ctrl;
 	CMFCEditBrowseCtrl dnote_ctrl;
 	CComboBox email_combo;
 	CComboBox signature_combo;
 	CComboBox time_combo;
-	CButton time_radio1;
-	CButton time_radio2;
-	CButton time_radio3;
 	CString time_setter;
 	int signatureId;
 	std::vector<SignaturesFromDB> signaturesList;
 	std::vector< SenderEmails> senderList;
-	BOOL stopWatching;
+	void DisableControls();
+	void EnableControls();
+
+	CWinThread* m_pWatcherThread = nullptr;
+	HANDLE m_hStopEvent = NULL;
+	bool stopWatching = false;
+	static UINT WatcherThreadProc(LPVOID pParam);
 
 public:
+	CString root_directory_path;
+	CString invoice_archive_path;
+	CString dnote_archive_path;
 	CMainTab(CWnd* pParent = nullptr);   // standard constructor
 	virtual ~CMainTab();
 	void SetDatabase(CDatabase* pDatabase) { dbContext = pDatabase; }
@@ -50,7 +54,6 @@ public:
 	CString GetSignatureId(CString name);
 	void GetAllSignatures();
 	void GetAllSenderMails();
-	void DirectoryWatcher(const std::wstring& directory);
 	CString GetCurrentTime();
 
 // Dialog Data
@@ -75,7 +78,6 @@ public:
 	afx_msg void OnEnChangeBrowserootdirectory();
 	afx_msg void OnEnChangeBrowseiarchive();
 	afx_msg void OnEnChangeBrowsednarchive();
-	afx_msg void OnBtnClickedRadioTime();
 	afx_msg void OnCbnSelchangeCombotime();
 	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 };
