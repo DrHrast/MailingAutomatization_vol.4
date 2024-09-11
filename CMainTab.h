@@ -40,6 +40,7 @@ private:
 	int signatureId;
 	std::vector<SignaturesFromDB> signaturesList;
 	std::vector< SenderEmails> senderList;
+	BOOL stopWatching;
 
 public:
 	CMainTab(CWnd* pParent = nullptr);   // standard constructor
@@ -49,6 +50,8 @@ public:
 	CString GetSignatureId(CString name);
 	void GetAllSignatures();
 	void GetAllSenderMails();
+	void DirectoryWatcher(const std::wstring& directory);
+	CString GetCurrentTime();
 
 // Dialog Data
 #ifdef AFX_DESIGN_TIME

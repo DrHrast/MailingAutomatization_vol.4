@@ -5,8 +5,12 @@
 #include "pch.h"
 #include "NWP_project7.h"
 #include "afxdialogex.h"
+#include "afxstr.h"
 #include "CMainTab.h"
 #include <iostream>
+#include <Python.h>
+#include <Windows.h>
+#include <ctime>
 
 
 // CMainTab dialog
@@ -27,6 +31,7 @@ BOOL CMainTab::OnInitDialog() {
 	CDialogEx::OnInitDialog();
 
 	m_groupBoxBrush.CreateSolidBrush(RGB(173, 216, 230));
+	stopWatching = FALSE;
 
 	//DID_IT: For now manual selection and fill, but later from database
 	GetAllSignatures();
@@ -127,45 +132,6 @@ END_MESSAGE_MAP()
 
 
 // CMainTab message handlers
-
-
-void CMainTab::OnBnClickedButtonstart()
-{
-	if (dbContext && dbContext->IsOpen())
-	{
-		// Fetch data from the controls
-		root_ctrl.GetWindowText(root_directory_path);
-		invoice_ctrl.GetWindowText(invoice_archive_path);
-		dnote_ctrl.GetWindowText(dnote_archive_path);
-
-		CString senderMail, signatureName;
-		email_combo.GetWindowText(senderMail);
-		OnCbnSelchangeCombotime();
-
-		// Construct the SQL query to insert or update the last row in the GeneralSettings table
-		CString sqlQuery;
-		sqlQuery.Format(_T("INSERT INTO GeneralSettings (RootPath, InvArchPath, DnArchPath, SenderMail, SignatureId, EndTime) ")
-			_T("VALUES ('%s', '%s', '%s', '%s', '%i', '%s')"),
-			root_directory_path, invoice_archive_path, dnote_archive_path, senderMail, signaturesList[signature_combo.GetCurSel()].id, time_setter);
-
-	   /*AfxMessageBox(
-			root_directory_path + "\n" + invoice_archive_path +"\n"+  dnote_archive_path
-			+"\n"+ combo_box_email + "\n" + combo_box_sig
-			+ "\nTime: " + time_setter 
-		);*/
-
-		try
-		{
-			dbContext->ExecuteSQL(sqlQuery);
-			AfxMessageBox(_T("Settings saved successfully!"));
-		}
-		catch (CDBException* e)
-		{
-			AfxMessageBox(_T("Failed to save settings: ") + e->m_strError);
-			e->Delete();
-		}
-	}
-}
 
 void CMainTab::LoadGeneralSettingsFromDb() {
 	if (dbContext && dbContext->IsOpen()) {
@@ -278,7 +244,7 @@ void CMainTab::GetAllSignatures() {
 
 void CMainTab::OnBnClickedButtonstop()
 {
-	// TODO: Add your control notification handler code here
+	stopWatching = TRUE;
 }
 
 void CMainTab::OnEnChangeBrowserootdirectory()
@@ -305,11 +271,9 @@ void CMainTab::OnBtnClickedRadioTime()
 		time_combo.ShowWindow(SW_HIDE);
 		if (time_radio1.GetCheck() == BST_CHECKED) {
 			time_setter = _T("15:00");
-			time_setter += _T(":00");
 		}
 		else {
 			time_setter = _T("15:30");
-			time_setter += _T(":00");
 		}
 	}
 }
@@ -319,5 +283,126 @@ void CMainTab::OnCbnSelchangeCombotime()
 	int selected = -1;
 	selected = time_combo.GetCurSel();
 	time_combo.GetLBText(selected, time_setter);
-	time_setter += _T(":00");
+}
+
+CString CMainTab::GetCurrentTime()
+{
+	SYSTEMTIME st;
+	GetLocalTime(&st);
+
+	CString currentTime;
+	currentTime.Format(_T("%02d:%02d"), st.wHour, st.wMinute);
+
+	return currentTime;
+}
+
+void CMainTab::DirectoryWatcher(const std::wstring& directory) {
+
+	HANDLE hDir = CreateFileW(
+		directory.c_str(),
+		FILE_LIST_DIRECTORY,
+		FILE_SHARE_READ | FILE_SHARE_DELETE,
+		NULL,
+		OPEN_EXISTING,
+		FILE_FLAG_BACKUP_SEMANTICS,
+		NULL
+	);
+
+	if (hDir == INVALID_HANDLE_VALUE) {
+		AfxMessageBox(_T("Failed to open directory handle."));
+		return;
+	}
+
+	char buffer[1024];
+	DWORD bytesReturned;
+
+	while (!stopWatching) {
+		CString currentTime = GetCurrentTime();
+
+		// Compare current time with "15:00"
+		if (currentTime.Compare(time_setter) == 0) {
+			
+			break;
+		}
+
+		if (ReadDirectoryChangesW(
+			hDir,
+			&buffer,
+			sizeof(buffer),
+			FALSE, //subdirectories
+			FILE_NOTIFY_CHANGE_FILE_NAME,
+			&bytesReturned,
+			NULL,
+			NULL
+		)) {
+			FILE_NOTIFY_INFORMATION* pNotify;
+			int offset = 0;
+
+			do {
+				pNotify = (FILE_NOTIFY_INFORMATION*)&buffer[offset];
+				std::wstring fileName(pNotify->FileName, pNotify->FileNameLength / sizeof(WCHAR));
+
+				if (pNotify->Action == FILE_ACTION_ADDED)
+				{
+					//std::wcout << L"New file detected: " << fileName << std::endl;
+					AfxMessageBox(_T("New file detected: %s", fileName));
+
+					//TODO: Main function when file found
+					//SetTimer(*this, TIMER_ID, 1000, nullptr);
+				}
+				offset += pNotify->NextEntryOffset;
+			} while (pNotify->NextEntryOffset != 0);
+		}
+		else
+		{
+			AfxMessageBox(_T("Error reading directory changes."));
+		}
+	}
+
+	CloseHandle(hDir);
+}
+
+void CMainTab::OnBnClickedButtonstart()
+{
+	if (dbContext && dbContext->IsOpen())
+	{
+		// Fetch data from the controls
+		root_ctrl.GetWindowText(root_directory_path);
+		invoice_ctrl.GetWindowText(invoice_archive_path);
+		dnote_ctrl.GetWindowText(dnote_archive_path);
+
+		CString senderMail, signatureName;
+		email_combo.GetWindowText(senderMail);
+		OnCbnSelchangeCombotime();
+
+		// Construct the SQL query to insert or update the last row in the GeneralSettings table
+		CString sqlQuery;
+		sqlQuery.Format(_T("INSERT INTO GeneralSettings (RootPath, InvArchPath, DnArchPath, SenderMail, SignatureId, EndTime) ")
+			_T("VALUES ('%s', '%s', '%s', '%s', '%i', '%s')"),
+			root_directory_path, invoice_archive_path, dnote_archive_path, senderMail, signaturesList[signature_combo.GetCurSel()].id, time_setter);
+
+	   /*AfxMessageBox(
+			root_directory_path + "\n" + invoice_archive_path +"\n"+  dnote_archive_path
+			+"\n"+ combo_box_email + "\n" + combo_box_sig
+			+ "\nTime: " + time_setter 
+		);*/
+
+		try
+		{
+			dbContext->ExecuteSQL(sqlQuery);
+			AfxMessageBox(_T("Settings saved successfully!"));
+		}
+		catch (CDBException* e)
+		{
+			AfxMessageBox(_T("Failed to save settings: ") + e->m_strError);
+			e->Delete();
+		}
+			
+		
+		std::wstring path(root_directory_path.GetString());
+		stopWatching = FALSE;
+		
+		DirectoryWatcher(path);
+			
+	}
 }
