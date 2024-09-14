@@ -39,10 +39,7 @@ private:
 	void EnableControls();
 	void FolderWatcher();
 
-	//CWinThread* m_pWatcherThread = nullptr;
-	//HANDLE m_hStopEvent = NULL;
 	bool stopWatching = false;
-	//static UINT WatcherThreadProc(LPVOID pParam);
 
 public:
 	CString root_directory_path;
