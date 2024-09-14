@@ -42,13 +42,7 @@
     <ClInclude Include="CSettingsTab.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CCheckComboBox.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ReceiverCheckComboBox.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FIleHandler.h">
+    <ClInclude Include="FileHandler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -71,13 +65,7 @@
     <ClCompile Include="CSettingsTab.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CCheckComboBox.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ReceiverCheckComboBox.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="FIleHandler.cpp">
+    <ClCompile Include="FileHandler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

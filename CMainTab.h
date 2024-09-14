@@ -4,6 +4,8 @@
 #include <afxdb.h>
 #include <vector>
 #include <string>
+#include <thread>
+#include <map>
 
 struct SignaturesFromDB
 {
@@ -35,11 +37,7 @@ private:
 	int signatureId;
 	std::vector<SignaturesFromDB> signaturesList;
 	std::vector< SenderEmails> senderList;
-	void DisableControls();
-	void EnableControls();
-	void FolderWatcher();
-
-	bool stopWatching = false;
+	std::vector<std::wstring> GetAllFilesInDirectory(const std::wstring& directory);
 
 public:
 	CString root_directory_path;

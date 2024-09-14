@@ -9,32 +9,13 @@
 #include "CMainTab.h"
 #include <iostream>
 #include <Windows.h>
+#include <vector>
 #include <ctime>
-#include "FIleHandler.h"
+#include "FileHandler.h"
 
 // CMainTab dialog
 
 IMPLEMENT_DYNAMIC(CMainTab, CDialogEx)
-
-void CMainTab::DisableControls()
-{
-	root_ctrl.EnableWindow(false);
-	invoice_ctrl.EnableWindow(false);
-	dnote_ctrl.EnableWindow(false);
-	email_combo.EnableWindow(false);
-	signature_combo.EnableWindow(false);
-	time_combo.EnableWindow(false);
-}
-
-void CMainTab::EnableControls()
-{
-	root_ctrl.EnableWindow(true);
-	invoice_ctrl.EnableWindow(true);
-	dnote_ctrl.EnableWindow(true);
-	email_combo.EnableWindow(true);
-	signature_combo.EnableWindow(true);
-	time_combo.EnableWindow(true);
-}
 
 CMainTab::CMainTab(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_MAINTAB, pParent)
@@ -42,15 +23,15 @@ CMainTab::CMainTab(CWnd* pParent /*=nullptr*/)
 
 }
 
-CMainTab::~CMainTab()
-{
+CMainTab::~CMainTab() {
+
 }
+
 
 BOOL CMainTab::OnInitDialog() {
 	CDialogEx::OnInitDialog();
 
 	m_groupBoxBrush.CreateSolidBrush(RGB(173, 216, 230));
-	stopWatching = FALSE;
 
 	//DID_IT: For now manual selection and fill, but later from database
 	GetAllSignatures();
@@ -234,8 +215,9 @@ void CMainTab::GetAllSignatures() {
 	recordset.Close();
 }
 
-void CMainTab::OnBnClickedButtonstop()
+void CMainTab::OnBnClickedButtonstop() 
 {
+	//Now empty, maybe some day in the future something will happen 
 }
 
 void CMainTab::OnEnChangeBrowserootdirectory()
@@ -275,77 +257,6 @@ CString CMainTab::GetCurrentTime()
 	return currentTime;
 }
 
-void CMainTab::FolderWatcher() {
-	std::wstring directory(root_directory_path.GetString());
-	HANDLE hDir = CreateFileW(
-		directory.c_str(),
-		FILE_LIST_DIRECTORY,
-		FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-		NULL,
-		OPEN_EXISTING,
-		FILE_FLAG_BACKUP_SEMANTICS,
-		NULL
-	);
-
-
-	if (hDir == INVALID_HANDLE_VALUE)
-	{
-		return;
-	}
-
-	char buffer[1024];
-	DWORD bytesReturned;
-
-	int selectedHour = _ttoi(time_setter.Left(2));  // Extract hours
-	int selectedMinute = _ttoi(time_setter.Mid(3, 2)); // Extract minutes
-	int selectedTimeInMinutes = selectedHour * 60 + selectedMinute;
-
-	while (!stopWatching) // Run until stopWatching becomes true
-	{
-		SYSTEMTIME currentSystemTime;
-		GetLocalTime(&currentSystemTime);
-		int currentTimeInMinutes = currentSystemTime.wHour * 60 + currentSystemTime.wMinute;
-
-		if (currentTimeInMinutes >= selectedTimeInMinutes) {
-			break;
-		}
-
-		if (ReadDirectoryChangesW(
-			hDir,
-			&buffer,
-			sizeof(buffer),
-			TRUE, // Watch subdirectories
-			FILE_NOTIFY_CHANGE_FILE_NAME, // Watch for file name changes (like new file)
-			&bytesReturned,
-			NULL,
-			NULL
-		))
-		{
-			FILE_NOTIFY_INFORMATION* pNotify;
-			int offset = 0;
-
-			do
-			{
-				pNotify = (FILE_NOTIFY_INFORMATION*)&buffer[offset];
-				std::wstring fileName(pNotify->FileName, pNotify->FileNameLength / sizeof(WCHAR));
-
-				if (pNotify->Action == FILE_ACTION_ADDED)
-				{	
-					FileHandler fileHandler(this, fileName);
-				}
-
-				offset += pNotify->NextEntryOffset;
-			} while (pNotify->NextEntryOffset != 0);
-		}
-		else
-		{
-			/*std::cerr << "Error reading directory changes." << std::endl;*/
-		}
-	}
-
-	CloseHandle(hDir);
-}
-
 void CMainTab::OnBnClickedButtonstart()
 {
 	// Check if the database connection is open and fetch data from controls
@@ -371,7 +282,7 @@ void CMainTab::OnBnClickedButtonstart()
 			try
 			{
 				dbContext->ExecuteSQL(sqlQuery);
-				AfxMessageBox(_T("Settings saved successfully!"));
+				//AfxMessageBox(_T("Settings saved successfully!"));
 			}
 			catch (CDBException* e)
 			{
@@ -381,9 +292,42 @@ void CMainTab::OnBnClickedButtonstart()
 				e->Delete();
 			}
 		}
-		else
-		{
-			
-		}
 	}
+
+	std::vector<std::wstring> files = GetAllFilesInDirectory(std::wstring(root_directory_path.GetString()));
+	FileHandler fileHandler(files, dbContext);
+	fileHandler.StartPoint();
+	/*CString message = _T("");
+	for each (std::wstring file in files) {
+		message += CString(file.c_str()) + _T("\n");
+	}
+	AfxMessageBox(message);*/
+}
+
+std::vector<std::wstring> CMainTab::GetAllFilesInDirectory(const std::wstring& directory) {
+	std::vector<std::wstring> files;
+	WIN32_FIND_DATA findFileData;
+	HANDLE hFind = INVALID_HANDLE_VALUE;
+
+	std::wstring dirWithWildcard = directory + L"\\*"; // Add wildcard to search all files
+
+	hFind = FindFirstFile(dirWithWildcard.c_str(), &findFileData);
+
+	if (hFind == INVALID_HANDLE_VALUE) {
+		return files;
+	}
+
+	do {
+		// Exclude current and parent directories ("." and "..")
+		if (wcscmp(findFileData.cFileName, L".") != 0 && wcscmp(findFileData.cFileName, L"..") != 0) {
+			// If the found file is a directory, ignore it for now
+			if (!(findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+				files.push_back(findFileData.cFileName);
+			}
+		}
+	} while (FindNextFile(hFind, &findFileData) != 0);
+
+	FindClose(hFind);
+
+	return files;
 }
