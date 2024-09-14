@@ -15,11 +15,11 @@ private:
 
 private:
 	void LoadDirectories();
-	std::string CallPythonFile(const CString folderPath, const std::wstring& fileName);
+	std::string CallPythonFile(const std::wstring& fileName);
 	std::string wstring_to_string(const std::wstring& wstr);
 	std::wstring string_to_wstring(const std::string& str);
 	void CheckAllFiles();
-	void SaveToDatabase(std::wstring file, bool isInv);
+	void SaveToDatabase(std::wstring file, bool isInv, CString vat = NULL);
 	void MoveFiles(std::wstring file, bool isInv);
 
 protected:

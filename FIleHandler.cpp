@@ -34,29 +34,32 @@ void FileHandler::LoadDirectories() {
 	CString sqlQuery = _T("SELECT * FROM GeneralSettings ORDER BY ID DESC");
 	recordset.Open(CRecordset::forwardOnly, sqlQuery);
 
+	// Ensure you are actually getting valid values
 	recordset.GetFieldValue(_T("RootPath"), rootDir);
 	recordset.GetFieldValue(_T("InvArchPath"), invDir);
 	recordset.GetFieldValue(_T("DnArchPath"), dnDir);
+
+	AfxMessageBox(rootDir);  // Display rootDir to make sure it's valid
 	recordset.Close();
 }
 
-void FileHandler::SaveToDatabase(std::wstring file, bool isInv) {
+void FileHandler::SaveToDatabase(std::wstring file, bool isInv, CString vat) {
 
 	CString cFile(file.c_str());
 
 	SYSTEMTIME st;
 	GetLocalTime(&st);
 
-	CString boolInv;
-	boolInv = isInv ? "True" : "False";
+	int boolInv;
+	boolInv = isInv ? 1 : 0;
 
 	CString currentDateTime;
 	currentDateTime.Format(_T("%04d-%02d-%02d %02d:%02d:%02d"),
 		st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);
 
 	CString sqlQuery;
-	sqlQuery.Format(_T("INSERT INTO DocInfo (DocumentName, IsSent, DateSent) VALUES ('%s', '%d', '%s')"),
-		cFile, boolInv, currentDateTime);
+	sqlQuery.Format(_T("INSERT INTO DocInfo (DocumentName, IsSent, DateSent, Vat) VALUES ('%s', '%d', '%s', '%s')"),
+		cFile, boolInv, currentDateTime, vat);
 
 	try {
 		dbContext->ExecuteSQL(sqlQuery);
@@ -79,8 +82,8 @@ void FileHandler::MoveFiles(std::wstring file, bool isInv)
 	std::wstring sourcePath = root + L"\\" + fileName;
 	std::wstring destinationPath = destinationDir + L"\\" + fileName;
 	// Move the file using filesystem API
-	AfxMessageBox(CString(sourcePath.c_str()));
-	AfxMessageBox(CString(destinationDir.c_str()));
+	//AfxMessageBox(CString(sourcePath.c_str()));
+	//AfxMessageBox(CString(destinationDir.c_str()));
 
 	try {
 		if (fs::exists(destinationPath)) {
@@ -112,17 +115,24 @@ void FileHandler::CheckAllFiles() {
 	for each (std::wstring file in files) {
 		std::wstring fileType = file.substr(0, 2);
 		if (fileType.compare(L"Ra") == 0) {
-			//TODO: Call python script
+			//DID_IT: Call python script
+			std::string extractedVat;
+			extractedVat = CallPythonFile(file);
+			CString vat(extractedVat.c_str());
 			//DID_IT: Save to a database
-			SaveToDatabase(file, true);
+			SaveToDatabase(file, true, vat);
+			
 			//TODO: Forward info for mail processing
+			
 			//DID_IT: Move file into a folder
 			MoveFiles(file, true);
 		}
 		else {
 			//DID_IT: Save to a database
 			SaveToDatabase(file, false);
+
 			//TODO: Forward info for mail processing
+			
 			//DID_IT: Move file into a folder
 			MoveFiles(file, false);
 		}
@@ -149,7 +159,7 @@ std::wstring string_to_wstring(const std::string& str)
 	return wstr;
 }
 
-std::string FileHandler::CallPythonFile(const CString folderPath, const std::wstring& fileName)
+std::string FileHandler::CallPythonFile(const std::wstring& fileName)
 {
 	PyObject* pName, * pModule, * pFunc;
 	PyObject* pArgs, * pValue;
@@ -157,45 +167,65 @@ std::string FileHandler::CallPythonFile(const CString folderPath, const std::wst
 
 	Py_Initialize();
 
-	pName = PyUnicode_DecodeFSDefault("PDFReader_VatIsolation");
+	// Add the path to your script folder
+	PyObject* sysPath = PySys_GetObject("path");
+	PyList_Append(sysPath, PyUnicode_FromString("C:\\Faks\\NWP\\Project\\NWP_project7\\NWP_project7"));
+	PyList_Append(sysPath, PyUnicode_FromString("C:\\Users\\Korisnik\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages"));
 
+	// Load your script
+	pName = PyUnicode_DecodeFSDefault("PDFReader_VatIsolation");  // No .py extension
+	if (!pName) {
+		AfxMessageBox(_T("Failed to decode module name."));
+		Py_Finalize();
+		return result;
+	}
+
+	// Import the module
 	pModule = PyImport_Import(pName);
 	Py_DECREF(pName);
-
 	if (pModule != nullptr) {
+		// Load the function
 		pFunc = PyObject_GetAttrString(pModule, "oib_isolation");
-
 		if (pFunc && PyCallable_Check(pFunc)) {
-			pArgs = PyTuple_New(2);
-			PyTuple_SetItem(pArgs, 0, PyUnicode_FromString(wstring_to_string(wRootDir).c_str()));
-			PyTuple_SetItem(pArgs, 1, PyUnicode_FromString(wstring_to_string(fileName).c_str()));
+			std::string rootPath(CT2A(rootDir.GetString()));
+			std::string file(wstring_to_string(fileName));
 
+			/*CString debugMessage;
+			debugMessage.Format(_T("rootPath: %s\nfile: %s"), CString(rootPath.c_str()), CString(file.c_str()));
+			AfxMessageBox(debugMessage);*/
+
+			// Prepare arguments for the Python function
+			pArgs = PyTuple_Pack(2, PyUnicode_FromString(rootPath.c_str()),
+				PyUnicode_FromString(file.c_str()));
+
+			// Call the function
 			pValue = PyObject_CallObject(pFunc, pArgs);
 			Py_DECREF(pArgs);
 
 			if (pValue != nullptr) {
-				result = PyUnicode_AsUTF8(pValue);
+				result = PyUnicode_AsUTF8(pValue);  // Get result as string
 				Py_DECREF(pValue);
 			}
 			else {
-				//Error handle - call failed
+				AfxMessageBox(_T("Error: Function call failed"));
+				PyErr_Print();  // Print error message
 			}
 		}
 		else {
-			//Error handle - python function not found
+			AfxMessageBox(_T("Error: Python function not found"));
+			PyErr_Print();  // Print error message
 		}
-
 		Py_XDECREF(pFunc);
 		Py_DECREF(pModule);
-
 	}
 	else {
-		//Error handle - module not loaded
+		AfxMessageBox(_T("Error: Python module not loaded"));
+		PyErr_Print();  // Print error message
 	}
 
-	Py_Finalize();
-
-	AfxMessageBox(_T("Vat: '%s", result));
+	// Return the extracted result
+	/*CString cExtractedVat(result.c_str());
+	AfxMessageBox(cExtractedVat);*/
 
 	return result;
 }
