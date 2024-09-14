@@ -98,7 +98,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <AdditionalLibraryDirectories>C:\Users\Korisnik\AppData\Local\Programs\Python\Python312\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>python312.lib</AdditionalDependencies>
+      <AdditionalDependencies>python312_d.lib</AdditionalDependencies>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -123,7 +123,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <AdditionalLibraryDirectories>C:\Users\Korisnik\AppData\Local\Programs\Python\Python312\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>python312.lib</AdditionalDependencies>
+      <AdditionalDependencies>python312_d.lib</AdditionalDependencies>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>

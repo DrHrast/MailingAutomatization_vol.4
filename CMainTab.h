@@ -37,11 +37,12 @@ private:
 	std::vector< SenderEmails> senderList;
 	void DisableControls();
 	void EnableControls();
+	void FolderWatcher();
 
-	CWinThread* m_pWatcherThread = nullptr;
-	HANDLE m_hStopEvent = NULL;
+	//CWinThread* m_pWatcherThread = nullptr;
+	//HANDLE m_hStopEvent = NULL;
 	bool stopWatching = false;
-	static UINT WatcherThreadProc(LPVOID pParam);
+	//static UINT WatcherThreadProc(LPVOID pParam);
 
 public:
 	CString root_directory_path;
@@ -80,4 +81,5 @@ public:
 	afx_msg void OnEnChangeBrowsednarchive();
 	afx_msg void OnCbnSelchangeCombotime();
 	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+	afx_msg void OnClose();
 };

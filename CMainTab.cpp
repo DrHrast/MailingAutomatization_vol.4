@@ -8,90 +8,93 @@
 #include "afxstr.h"
 #include "CMainTab.h"
 #include <iostream>
-#include <Python.h>
 #include <Windows.h>
 #include <ctime>
+#include "FIleHandler.h"
 
-UINT CMainTab::WatcherThreadProc(LPVOID pParam)
-{
-	CMainTab* pThis = (CMainTab*)pParam;
-
-	// Get the directory path
-	std::wstring directory(pThis->root_directory_path.GetString());
-
-	HANDLE hDir = CreateFileW(
-		directory.c_str(),
-		FILE_LIST_DIRECTORY,
-		FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-		NULL,
-		OPEN_EXISTING,
-		FILE_FLAG_BACKUP_SEMANTICS,
-		NULL
-	);
-
-	if (hDir == INVALID_HANDLE_VALUE)
-	{
-		AfxMessageBox(_T("Failed to open directory handle."));
-		return 1;
-	}
-
-	char buffer[1024];
-	DWORD bytesReturned;
-
-	while (!pThis->stopWatching)
-	{
-		// Check if the stop event has been signaled
-		if (WaitForSingleObject(pThis->m_hStopEvent, 1000) == WAIT_OBJECT_0)
-		{
-			break;
-		}
-
-		// Check the time
-		CString currentTime = pThis->GetCurrentTime();
-		if (currentTime.Compare(pThis->time_setter) == 0)
-		{
-			AfxMessageBox(_T("Time reached!"));
-			break;
-		}
-
-		if (ReadDirectoryChangesW(
-			hDir,
-			&buffer,
-			sizeof(buffer),
-			FALSE, // Subdirectories
-			FILE_NOTIFY_CHANGE_FILE_NAME,
-			&bytesReturned,
-			NULL,
-			NULL
-		))
-		{
-			FILE_NOTIFY_INFORMATION* pNotify;
-			int offset = 0;
-
-			do {
-				pNotify = (FILE_NOTIFY_INFORMATION*)&buffer[offset];
-				std::wstring fileName(pNotify->FileName, pNotify->FileNameLength / sizeof(WCHAR));
-
-				if (pNotify->Action == FILE_ACTION_ADDED)
-				{
-					CString message;
-					message.Format(_T("New file detected: %s"), fileName.c_str());
-					AfxMessageBox(message);
-				}
-
-				offset += pNotify->NextEntryOffset;
-			} while (pNotify->NextEntryOffset != 0);
-		}
-		else
-		{
-			AfxMessageBox(_T("Error reading directory changes."));
-		}
-	}
-
-	CloseHandle(hDir);
-
-	return 0;
-}
+//UINT CMainTab::WatcherThreadProc(LPVOID pParam)
+//{
+//	CMainTab* pThis = (CMainTab*)pParam;
+//
+//	// Get the directory path
+//	std::wstring directory(pThis->root_directory_path.GetString());
+//
+//	HANDLE hDir = CreateFileW(
+//		directory.c_str(),
+//		FILE_LIST_DIRECTORY,
+//		FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+//		NULL,
+//		OPEN_EXISTING,
+//		FILE_FLAG_BACKUP_SEMANTICS,
+//		NULL
+//	);
+//
+//	if (hDir == INVALID_HANDLE_VALUE)
+//	{
+//		//AfxMessageBox(_T("Failed to open directory handle."));
+//		return 1;
+//	}
+//
+//	char buffer[1024];
+//	DWORD bytesReturned;
+//
+//	// Main loop to monitor directory changes and time
+//	while (true)
+//	{
+//		// Check if the stop event has been signaled
+//		if (WaitForSingleObject(pThis->m_hStopEvent, 1000) == WAIT_OBJECT_0)
+//		{
+//			break; // Stop event was triggered, break the loop
+//		}
+//
+//		// Check the time
+//		CString currentTime = pThis->GetCurrentTime();
+//		if (currentTime.Compare(pThis->time_setter) == 0)
+//		{
+//			//AfxMessageBox(_T("Time reached! Stopping the watcher."));
+//			SetEvent(pThis->m_hStopEvent); // Trigger stop event when time is reached
+//			break;
+//		}
+//
+//		// Directory monitoring
+//		if (ReadDirectoryChangesW(
+//			hDir,
+//			&buffer,
+//			sizeof(buffer),
+//			FALSE, // Subdirectories
+//			FILE_NOTIFY_CHANGE_FILE_NAME,
+//			&bytesReturned,
+//			NULL,
+//			NULL
+//		))
+//		{
+//			FILE_NOTIFY_INFORMATION* pNotify;
+//			int offset = 0;
+//
+//			do {
+//				pNotify = (FILE_NOTIFY_INFORMATION*)&buffer[offset];
+//				std::wstring fileName(pNotify->FileName, pNotify->FileNameLength / sizeof(WCHAR));
+//
+//				if (pNotify->Action == FILE_ACTION_ADDED)
+//				{
+//					CString message;
+//					message.Format(_T("New file detected: %s"), fileName.c_str());
+//					//AfxMessageBox(message);
+//				}
+//
+//				offset += pNotify->NextEntryOffset;
+//			} while (pNotify->NextEntryOffset != 0);
+//		}
+//		else
+//		{
+//			//AfxMessageBox(_T("Error reading directory changes."));
+//		}
+//	}
+//
+//	CloseHandle(hDir);
+//
+//	return 0;
+//}
 
 
 // CMainTab dialog
@@ -126,7 +129,7 @@ CMainTab::CMainTab(CWnd* pParent /*=nullptr*/)
 
 CMainTab::~CMainTab()
 {
-	if (m_pWatcherThread)
+	/*if (m_pWatcherThread)
 	{
 		OnBnClickedButtonstop(); 
 	}
@@ -135,7 +138,7 @@ CMainTab::~CMainTab()
 	{
 		CloseHandle(m_hStopEvent);
 		m_hStopEvent = NULL;
-	}
+	}*/
 }
 
 BOOL CMainTab::OnInitDialog() {
@@ -176,6 +179,7 @@ BOOL CMainTab::OnInitDialog() {
 	time_combo.AddString(_T("15:45"));
 	time_combo.AddString(_T("16:00"));
 	time_combo.AddString(_T("22:40"));
+	time_combo.AddString(_T("10:11"));
 
 	//checks
 	//signature_combo.SetCurSel(0);
@@ -341,26 +345,25 @@ void CMainTab::GetAllSignatures() {
 
 void CMainTab::OnBnClickedButtonstop()
 {
-	// Signal the watcher thread to stop
-	if (m_hStopEvent)
-	{
-		SetEvent(m_hStopEvent);
-	}
+	//// Signal the watcher thread to stop
+	//if (m_hStopEvent)
+	//{
+	//	SetEvent(m_hStopEvent);
+	//}
 
-	// Wait for the thread to finish
-	if (m_pWatcherThread)
-	{
-		WaitForSingleObject(m_pWatcherThread->m_hThread, INFINITE);
-		m_pWatcherThread = nullptr;
-		//AfxMessageBox(_T("Watcher stopped."));
-		EnableControls();
-	}
+	//// Wait for the thread to finish
+	//if (m_pWatcherThread)
+	//{
+	//	WaitForSingleObject(m_pWatcherThread->m_hThread, INFINITE);
+	//	m_pWatcherThread = nullptr;
+	//	EnableControls(); // Enable controls when the thread is stopped
+	//}
 
-	// Reset stop event for future use
-	if (m_hStopEvent)
-	{
-		ResetEvent(m_hStopEvent);
-	}
+	//// Reset stop event for future use
+	//if (m_hStopEvent)
+	//{
+	//	ResetEvent(m_hStopEvent);
+	//}
 }
 
 void CMainTab::OnEnChangeBrowserootdirectory()
@@ -385,6 +388,24 @@ void CMainTab::OnCbnSelchangeCombotime()
 	time_combo.GetLBText(selected, time_setter);
 }
 
+void CMainTab::OnClose()
+{
+	//// Ensure the watcher is stopped
+	//if (m_hStopEvent)
+	//{
+	//	SetEvent(m_hStopEvent);
+	//}
+
+	//if (m_pWatcherThread)
+	//{
+	//	WaitForSingleObject(m_pWatcherThread->m_hThread, INFINITE);
+	//	m_pWatcherThread = nullptr;
+	//}
+
+	//// Call the base class OnClose
+	//CDialogEx::OnClose();
+}
+
 CString CMainTab::GetCurrentTime()
 {
 	SYSTEMTIME st;
@@ -396,29 +417,101 @@ CString CMainTab::GetCurrentTime()
 	return currentTime;
 }
 
+void CMainTab::FolderWatcher() {
+	std::wstring directory(root_directory_path.GetString());
+	HANDLE hDir = CreateFileW(
+		directory.c_str(),
+		FILE_LIST_DIRECTORY,
+		FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+		NULL,
+		OPEN_EXISTING,
+		FILE_FLAG_BACKUP_SEMANTICS,
+		NULL
+	);
+
+
+	if (hDir == INVALID_HANDLE_VALUE)
+	{
+		return;
+	}
+
+	char buffer[1024];
+	DWORD bytesReturned;
+
+	int selectedHour = _ttoi(time_setter.Left(2));  // Extract hours
+	int selectedMinute = _ttoi(time_setter.Mid(3, 2)); // Extract minutes
+	int selectedTimeInMinutes = selectedHour * 60 + selectedMinute;
+
+	while (!stopWatching) // Run until stopWatching becomes true
+	{
+		SYSTEMTIME currentSystemTime;
+		GetLocalTime(&currentSystemTime);
+		int currentTimeInMinutes = currentSystemTime.wHour * 60 + currentSystemTime.wMinute;
+
+		if (currentTimeInMinutes >= selectedTimeInMinutes) {
+			break;
+		}
+
+		if (ReadDirectoryChangesW(
+			hDir,
+			&buffer,
+			sizeof(buffer),
+			TRUE, // Watch subdirectories
+			FILE_NOTIFY_CHANGE_FILE_NAME, // Watch for file name changes (like new file)
+			&bytesReturned,
+			NULL,
+			NULL
+		))
+		{
+			FILE_NOTIFY_INFORMATION* pNotify;
+			int offset = 0;
+
+			do
+			{
+				pNotify = (FILE_NOTIFY_INFORMATION*)&buffer[offset];
+				std::wstring fileName(pNotify->FileName, pNotify->FileNameLength / sizeof(WCHAR));
+
+				if (pNotify->Action == FILE_ACTION_ADDED)
+				{	
+					FileHandler fileHandler(this, fileName);
+				}
+
+				offset += pNotify->NextEntryOffset;
+			} while (pNotify->NextEntryOffset != 0);
+		}
+		else
+		{
+			/*std::cerr << "Error reading directory changes." << std::endl;*/
+		}
+	}
+
+	CloseHandle(hDir);
+}
+
 void CMainTab::OnBnClickedButtonstart()
 {
 	// Check if the database connection is open and fetch data from controls
 	if (dbContext && dbContext->IsOpen())
 	{
-
 		// Set up the stop event
-		if (!m_hStopEvent)
+		/*if (!m_hStopEvent)
 		{
 			m_hStopEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-		}
+		}*/
 
 		// Start the watcher thread
-		if (m_pWatcherThread == nullptr)
+		if (true)
 		{
+			// Fetch data from the controls
 			root_ctrl.GetWindowText(root_directory_path);
 			invoice_ctrl.GetWindowText(invoice_archive_path);
 			dnote_ctrl.GetWindowText(dnote_archive_path);
 
 			CString senderMail;
 			email_combo.GetWindowText(senderMail);
-			OnCbnSelchangeCombotime();
+			OnCbnSelchangeCombotime(); // Get the selected time
 
+			// Construct the SQL query and insert data into the database
 			CString sqlQuery;
 			sqlQuery.Format(_T("INSERT INTO GeneralSettings (RootPath, InvArchPath, DnArchPath, SenderMail, SignatureId, EndTime) ")
 				_T("VALUES ('%s', '%s', '%s', '%s', '%i', '%s')"),
@@ -432,14 +525,16 @@ void CMainTab::OnBnClickedButtonstart()
 			catch (CDBException* e)
 			{
 				CString errorMsg;
-				errorMsg.Format(_T("Failed to save settings: '%s'"), e->m_strError);
+				//errorMsg.Format(_T("Failed to save settings: '%s'"), e->m_strError);
 				AfxMessageBox(errorMsg);
 				e->Delete();
 			}
 
-			DisableControls();
-			m_pWatcherThread = AfxBeginThread(WatcherThreadProc, this);
-			//AfxMessageBox(_T("Watcher started."));
+			// Disable controls while the watcher is running
+			//DisableControls();
+			//FolderWatcher();
+			//EnableControls();
+			//m_pWatcherThread = AfxBeginThread(WatcherThreadProc, this);
 		}
 		else
 		{
