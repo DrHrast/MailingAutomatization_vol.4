@@ -194,6 +194,7 @@
     <ClInclude Include="CListTab.h" />
     <ClInclude Include="CMainTab.h" />
     <ClInclude Include="CSettingsTab.h" />
+    <ClInclude Include="DatabaseHandler.h" />
     <ClInclude Include="FileHandler.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="NWP_project7.h" />
@@ -206,6 +207,7 @@
     <ClCompile Include="CListTab.cpp" />
     <ClCompile Include="CMainTab.cpp" />
     <ClCompile Include="CSettingsTab.cpp" />
+    <ClCompile Include="DatabaseHandler.cpp" />
     <ClCompile Include="FileHandler.cpp" />
     <ClCompile Include="NWP_project7.cpp" />
     <ClCompile Include="NWP_project7Dlg.cpp" />
