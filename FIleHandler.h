@@ -18,6 +18,7 @@ private:
 
 private:
 	void LoadDirectories();
+	std::wstring ChangeFileName(const std::wstring& fileName);
 	std::string CallPythonFile(const std::wstring& fileName);
 	std::string wstring_to_string(const std::wstring& wstr);
 	std::wstring string_to_wstring(const std::string& str);
@@ -38,4 +39,6 @@ public:
 	FileHandler(std::vector<std::wstring> files, CDatabase* dbContext);
 	virtual ~FileHandler();
 	void StartPoint();
+	bool ContainsNonANSI(const std::wstring& fileName);
+	std::wstring RenameFileIfNecessary(std::wstring fileName);
 };

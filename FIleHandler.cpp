@@ -319,7 +319,6 @@ std::string FileHandler::CallPythonFile(const std::wstring& fileName)
 
 void FileHandler::MailingProcessing(std::wstring fileName, CString vat)
 {
-	AfxMessageBox(_T("Entering MailingProcessing..."));
 
 	HMODULE hMapi = ::LoadLibrary(_T("MAPI32.DLL"));
 	if (!hMapi) {
@@ -327,17 +326,12 @@ void FileHandler::MailingProcessing(std::wstring fileName, CString vat)
 		return;
 	}
 
-	AfxMessageBox(_T("MAPI32.DLL loaded successfully..."));
-
 	// Get function pointers to MAPI functions
 	LPMAPISENDMAIL pMapiSendMail = (LPMAPISENDMAIL)GetProcAddress(hMapi, "MAPISendMail");
 	if (!pMapiSendMail) {
-		AfxMessageBox(_T("pMapiSendMail is NULL. Could not load MAPI function."));
 		::FreeLibrary(hMapi);
 		return;
 	}
-
-	AfxMessageBox(_T("MAPI function loaded successfully..."));
 
 	MapiMessage message = { 0 };
 	std::vector<MapiRecipDesc> recipients;
@@ -345,18 +339,13 @@ void FileHandler::MailingProcessing(std::wstring fileName, CString vat)
 	CStringA subjectAnsi(GetSubject(fileName));
 	CStringA bodyAnsi(GetMailBody());
 
-	AfxMessageBox(_T("Subject: ") + CString(subjectAnsi) + _T("\nBody: ") + CString(bodyAnsi));
-
 	// Handling recipients for Delivery notes or Invoices based on VAT
 	if (vat.IsEmpty()) {
-		AfxMessageBox(_T("Handling recipients for Delivery notes (VAT is empty)..."));
 
 		// Split the recipient list by ';'
 		int pos = 0;
 		CString token;
 		CString emailList = recipient;
-
-		AfxMessageBox(_T("Recipient list: ") + emailList);
 
 		while (!(token = emailList.Tokenize(_T(";"), pos)).IsEmpty()) {
 			if (!token.Trim().IsEmpty()) {
@@ -365,13 +354,10 @@ void FileHandler::MailingProcessing(std::wstring fileName, CString vat)
 				CStringA recipientAnsi(token);
 				recipientDesc.lpszName = _strdup((LPSTR)(LPCSTR)recipientAnsi);
 				recipients.push_back(recipientDesc);
-
-				AfxMessageBox(_T("Added recipient: ") + token);
 			}
 		}
 	}
 	else {
-		AfxMessageBox(_T("Handling recipients for Invoices (VAT is present)..."));
 
 		//CString invoiceRecipient = GetInvoiceRecipients(vat);
 		//AfxMessageBox(_T("Invoice recipient(s): ") + invoiceRecipient);
@@ -386,8 +372,6 @@ void FileHandler::MailingProcessing(std::wstring fileName, CString vat)
 				CStringA recipientAnsi(token);
 				recipientDesc.lpszName = _strdup((LPSTR)(LPCSTR)recipientAnsi);
 				recipients.push_back(recipientDesc);
-
-				AfxMessageBox(_T("Added recipient: ") + token);
 			}
 		}
 	}
@@ -396,48 +380,29 @@ void FileHandler::MailingProcessing(std::wstring fileName, CString vat)
 	message.lpszSubject = (LPSTR)(LPCSTR)subjectAnsi;
 	message.lpszNoteText = (LPSTR)(LPCSTR)bodyAnsi;
 
-	AfxMessageBox(_T("Set subject and body."));
-
 	// Attach recipients to the message
 	message.nRecipCount = (ULONG)recipients.size();
 	message.lpRecips = recipients.data();
 
-	AfxMessageBox(_T("Recipient count: ") + CString(std::to_wstring(message.nRecipCount).c_str()));
-
 	// Attachments
-	// Wide string (e.g., containing "račun")
-	CString wideAttachmentPath = rootDir + _T("\\") + fileName.c_str();
-	AfxMessageBox(_T("Attachment path: ") + wideAttachmentPath);
+	CString attachmentPath = rootDir + _T("\\") + fileName.c_str();
 
-	if (!wideAttachmentPath.IsEmpty()) {
-		if (_waccess(wideAttachmentPath, 0) == -1) {
+	if (!attachmentPath.IsEmpty()) {
+		if (_waccess(attachmentPath, 0) == -1) {
 			AfxMessageBox(_T("Attachment file does not exist!"));
 			return;
 		}
 
 		MapiFileDesc fileDesc = { 0 };
 		fileDesc.nPosition = (ULONG)-1;
-
-		// Convert the wide string to ANSI
-		int ansiSizeNeeded = WideCharToMultiByte(CP_ACP, 0, wideAttachmentPath, -1, NULL, 0, NULL, NULL);
-		std::vector<char> ansiBuffer(ansiSizeNeeded);
-		WideCharToMultiByte(CP_ACP, 0, wideAttachmentPath, -1, ansiBuffer.data(), ansiSizeNeeded, NULL, NULL);
-
-		// Use the converted ANSI path
-		fileDesc.lpszPathName = _strdup(ansiBuffer.data());  // strdup to allocate memory for MAPI
-
+		CStringA attPathAnsi(attachmentPath);
+		fileDesc.lpszPathName = _strdup(attPathAnsi);
 		message.nFileCount = 1;
 		message.lpFiles = &fileDesc;
-
-		AfxMessageBox(_T("Attachment added: ") + wideAttachmentPath);
 	}
-
-	AfxMessageBox(_T("Attempting to send email..."));
 
 	// Send the mail (without showing the draft UI)
 	ULONG mailResult = pMapiSendMail(0L, 0L, &message, MAPI_LOGON_UI, 0L);
-
-	AfxMessageBox(_T("Send mail result code: ") + CString(std::to_wstring(mailResult).c_str()));
 
 	if (mailResult != SUCCESS_SUCCESS) {
 		CString errorMsg;
@@ -472,22 +437,12 @@ void FileHandler::MailingProcessing(std::wstring fileName, CString vat)
 		}
 		AfxMessageBox(errorMsg);
 	}
-	else {
-		AfxMessageBox(_T("Mail sent successfully!"));
-	}
 
 	::FreeLibrary(hMapi);
 
 	// Free allocated memory for recipients
 	for (auto& rec : recipients) {
 		free(rec.lpszName);
-	}
-
-	// Move the file after successfully sending the email
-	if (mailResult == SUCCESS_SUCCESS) {
-		AfxMessageBox(_T("Moving file..."));
-		MoveFiles(fileName, !vat.IsEmpty());
-		AfxMessageBox(_T("File moved successfully."));
 	}
 }
 
