@@ -12,6 +12,9 @@ private:
 	CString rootDir;
 	CString invDir;
 	CString dnDir;
+	CString recipient;
+	int signatureId;
+	int recipientCount;
 
 private:
 	void LoadDirectories();
@@ -19,8 +22,13 @@ private:
 	std::string wstring_to_string(const std::wstring& wstr);
 	std::wstring string_to_wstring(const std::string& str);
 	void CheckAllFiles();
-	void SaveToDatabase(std::wstring file, bool isInv, CString vat = NULL);
+	void SaveToDatabase(std::wstring file, bool isInv, CString vat = _T(""));
 	void MoveFiles(std::wstring file, bool isInv);
+	void MailingProcessing(std::wstring fileName, CString vat = _T(""));
+	void GetRecipients();
+	CString GetInvoiceRecipients(CString vat);
+	CString GetSubject(std::wstring fileName);
+	CString GetMailBody();
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);

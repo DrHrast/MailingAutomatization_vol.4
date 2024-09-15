@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <iostream>
 #include "Windows.h"
+#include <MAPI.h>
 
 namespace fs = std::filesystem;
 
@@ -23,6 +24,7 @@ FileHandler::~FileHandler()
 
 void FileHandler::StartPoint()
 {
+	GetRecipients();
 	LoadDirectories();
 	CheckAllFiles();
 }
@@ -34,13 +36,18 @@ void FileHandler::LoadDirectories() {
 	CString sqlQuery = _T("SELECT * FROM GeneralSettings ORDER BY ID DESC");
 	recordset.Open(CRecordset::forwardOnly, sqlQuery);
 
+	CString idValue;
+
 	// Ensure you are actually getting valid values
 	recordset.GetFieldValue(_T("RootPath"), rootDir);
 	recordset.GetFieldValue(_T("InvArchPath"), invDir);
 	recordset.GetFieldValue(_T("DnArchPath"), dnDir);
+	recordset.GetFieldValue(_T("SignatureId"), idValue);
 
-	AfxMessageBox(rootDir);  // Display rootDir to make sure it's valid
+	signatureId = _ttoi(idValue);
+	//AfxMessageBox(rootDir);
 	recordset.Close();
+	return;
 }
 
 void FileHandler::SaveToDatabase(std::wstring file, bool isInv, CString vat) {
@@ -58,8 +65,10 @@ void FileHandler::SaveToDatabase(std::wstring file, bool isInv, CString vat) {
 		st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);
 
 	CString sqlQuery;
+	CString escapedFileName = cFile;
+	escapedFileName.Replace(_T("'"), _T("''"));  // Escape single quotes by replacing ' with ''
 	sqlQuery.Format(_T("INSERT INTO DocInfo (DocumentName, IsSent, DateSent, Vat) VALUES ('%s', '%d', '%s', '%s')"),
-		cFile, boolInv, currentDateTime, vat);
+		escapedFileName, boolInv, currentDateTime, vat);
 
 	try {
 		dbContext->ExecuteSQL(sqlQuery);
@@ -107,37 +116,11 @@ void FileHandler::MoveFiles(std::wstring file, bool isInv)
 	}
 }
 
+
 void FileHandler::DoDataExchange(CDataExchange* pDX)
 {
 }
 
-void FileHandler::CheckAllFiles() {
-	for each (std::wstring file in files) {
-		std::wstring fileType = file.substr(0, 2);
-		if (fileType.compare(L"Ra") == 0) {
-			//DID_IT: Call python script
-			std::string extractedVat;
-			extractedVat = CallPythonFile(file);
-			CString vat(extractedVat.c_str());
-			//DID_IT: Save to a database
-			SaveToDatabase(file, true, vat);
-			
-			//TODO: Forward info for mail processing
-			
-			//DID_IT: Move file into a folder
-			MoveFiles(file, true);
-		}
-		else {
-			//DID_IT: Save to a database
-			SaveToDatabase(file, false);
-
-			//TODO: Forward info for mail processing
-			
-			//DID_IT: Move file into a folder
-			MoveFiles(file, false);
-		}
-	}
-}
 
 std::string FileHandler::wstring_to_string(const std::wstring& wstr)
 {
@@ -223,9 +206,392 @@ std::string FileHandler::CallPythonFile(const std::wstring& fileName)
 		PyErr_Print();  // Print error message
 	}
 
-	// Return the extracted result
+	//Return the extracted result
 	/*CString cExtractedVat(result.c_str());
 	AfxMessageBox(cExtractedVat);*/
 
 	return result;
+}
+//
+//void FileHandler::MailingProcessing(std::wstring fileName, CString vat)
+//{
+//	HMODULE hMapi = ::LoadLibrary(_T("MAPI32.DLL"));
+//	if (!hMapi) {
+//		AfxMessageBox(_T("MAPI32.DLL failed to load."));
+//		return;
+//	}
+//
+//	// Get function pointers to MAPI functions
+//	LPMAPISENDMAIL pMapiSendMail = (LPMAPISENDMAIL)GetProcAddress(hMapi, "MAPISendMail");
+//	if (!pMapiSendMail) {
+//		AfxMessageBox(_T("pMapiSendMail is NULL. Could not load MAPI function."));
+//		::FreeLibrary(hMapi);
+//		return;
+//	}
+//
+//	MapiMessage message = { 0 };
+//	MapiRecipDesc recipientDesc = { 0 };
+//
+//	//AfxMessageBox(vat);
+//
+//	CStringA recipientAnsi;
+//	CStringA subjectAnsi(GetSubject(fileName));
+//	CStringA bodyAnsi(GetMailBody());
+//
+//	//Delivery notes
+//	if (vat.IsEmpty()) {
+//
+//		recipientDesc.ulRecipClass = MAPI_TO;
+//		recipientAnsi = recipient;
+//		recipientDesc.lpszName = recipientAnsi.GetBuffer();
+//		message.nRecipCount = recipientCount;
+//		message.lpRecips = &recipientDesc;
+//
+//	}
+//	//Invoices
+//	else {
+//
+//		recipientDesc.ulRecipClass = MAPI_TO;
+//		/*CStringA buyerRecipientAnsi(GetInvoiceRecipients(vat));
+//		recipientDesc.lpszName = (LPSTR)(LPCSTR)buyerRecipientAnsi;*/
+//		recipientAnsi = recipient;
+//		recipientDesc.lpszName = recipientAnsi.GetBuffer();
+//		CString rec(GetInvoiceRecipients(vat));
+//		AfxMessageBox(rec);
+//		//message.nRecipCount = 2;
+//		message.nRecipCount = recipientCount;
+//		message.lpRecips = &recipientDesc;
+//	}
+//
+//	message.lpszSubject = subjectAnsi.GetBuffer();
+//	message.lpszNoteText = bodyAnsi.GetBuffer();
+//
+//	CString attachmentPath(rootDir + _T("\\") + fileName.c_str());
+//	if (!attachmentPath.IsEmpty()) {
+//		MapiFileDesc fileDesc = { 0 };
+//		fileDesc.nPosition = (ULONG)-1;
+//		CStringA attPathAnsi(attachmentPath);
+//		fileDesc.lpszPathName = attPathAnsi.GetBuffer();
+//		message.nFileCount = 1;
+//		message.lpFiles = &fileDesc;
+//	}
+//
+//	// Send the mail
+//	ULONG mailResult = pMapiSendMail(0L, 0L, &message, MAPI_LOGON_UI | MAPI_DIALOG, 0L);
+//
+//	if (mailResult != SUCCESS_SUCCESS) {
+//		CString errorMsg;
+//		switch (mailResult) {
+//		case MAPI_E_FAILURE:
+//			errorMsg = _T("General MAPI failure.");
+//			break;
+//		case MAPI_E_INSUFFICIENT_MEMORY:
+//			errorMsg = _T("Insufficient memory to proceed.");
+//			break;
+//		case MAPI_E_LOGIN_FAILURE:
+//			errorMsg = _T("Login failure.");
+//			break;
+//		case MAPI_E_USER_ABORT:
+//			errorMsg = _T("User aborted the mail operation.");
+//			break;
+//		case MAPI_E_TOO_MANY_FILES:
+//			errorMsg = _T("Too many file attachments.");
+//			break;
+//		case MAPI_E_TOO_MANY_RECIPIENTS:
+//			errorMsg = _T("Too many recipients.");
+//			break;
+//		case MAPI_E_ATTACHMENT_NOT_FOUND:
+//			errorMsg = _T("Attachment not found.");
+//			break;
+//		case MAPI_E_ATTACHMENT_OPEN_FAILURE:
+//			errorMsg = _T("Attachment open failure.");
+//			break;
+//		default:
+//			errorMsg.Format(_T("Unknown MAPI error code: %lu"), mailResult);
+//			break;
+//		}
+//		AfxMessageBox(errorMsg);
+//	}
+//	else {
+//		AfxMessageBox(_T("Mail sent successfully!"));
+//	}
+//}
+
+void FileHandler::MailingProcessing(std::wstring fileName, CString vat)
+{
+	AfxMessageBox(_T("Entering MailingProcessing..."));
+
+	HMODULE hMapi = ::LoadLibrary(_T("MAPI32.DLL"));
+	if (!hMapi) {
+		AfxMessageBox(_T("MAPI32.DLL failed to load."));
+		return;
+	}
+
+	AfxMessageBox(_T("MAPI32.DLL loaded successfully..."));
+
+	// Get function pointers to MAPI functions
+	LPMAPISENDMAIL pMapiSendMail = (LPMAPISENDMAIL)GetProcAddress(hMapi, "MAPISendMail");
+	if (!pMapiSendMail) {
+		AfxMessageBox(_T("pMapiSendMail is NULL. Could not load MAPI function."));
+		::FreeLibrary(hMapi);
+		return;
+	}
+
+	AfxMessageBox(_T("MAPI function loaded successfully..."));
+
+	MapiMessage message = { 0 };
+	std::vector<MapiRecipDesc> recipients;
+
+	CStringA subjectAnsi(GetSubject(fileName));
+	CStringA bodyAnsi(GetMailBody());
+
+	AfxMessageBox(_T("Subject: ") + CString(subjectAnsi) + _T("\nBody: ") + CString(bodyAnsi));
+
+	// Handling recipients for Delivery notes or Invoices based on VAT
+	if (vat.IsEmpty()) {
+		AfxMessageBox(_T("Handling recipients for Delivery notes (VAT is empty)..."));
+
+		// Split the recipient list by ';'
+		int pos = 0;
+		CString token;
+		CString emailList = recipient;
+
+		AfxMessageBox(_T("Recipient list: ") + emailList);
+
+		while (!(token = emailList.Tokenize(_T(";"), pos)).IsEmpty()) {
+			if (!token.Trim().IsEmpty()) {
+				MapiRecipDesc recipientDesc = { 0 };
+				recipientDesc.ulRecipClass = MAPI_TO;
+				CStringA recipientAnsi(token);
+				recipientDesc.lpszName = _strdup((LPSTR)(LPCSTR)recipientAnsi);
+				recipients.push_back(recipientDesc);
+
+				AfxMessageBox(_T("Added recipient: ") + token);
+			}
+		}
+	}
+	else {
+		AfxMessageBox(_T("Handling recipients for Invoices (VAT is present)..."));
+
+		//CString invoiceRecipient = GetInvoiceRecipients(vat);
+		//AfxMessageBox(_T("Invoice recipient(s): ") + invoiceRecipient);
+
+		int pos = 0;
+		CString token;
+
+		while (!(token = recipient.Tokenize(_T(";"), pos)).IsEmpty()) {
+			if (!token.Trim().IsEmpty()) {
+				MapiRecipDesc recipientDesc = { 0 };
+				recipientDesc.ulRecipClass = MAPI_TO;
+				CStringA recipientAnsi(token);
+				recipientDesc.lpszName = _strdup((LPSTR)(LPCSTR)recipientAnsi);
+				recipients.push_back(recipientDesc);
+
+				AfxMessageBox(_T("Added recipient: ") + token);
+			}
+		}
+	}
+
+	// Set the message details
+	message.lpszSubject = (LPSTR)(LPCSTR)subjectAnsi;
+	message.lpszNoteText = (LPSTR)(LPCSTR)bodyAnsi;
+
+	AfxMessageBox(_T("Set subject and body."));
+
+	// Attach recipients to the message
+	message.nRecipCount = (ULONG)recipients.size();
+	message.lpRecips = recipients.data();
+
+	AfxMessageBox(_T("Recipient count: ") + CString(std::to_wstring(message.nRecipCount).c_str()));
+
+	// Attachments
+	// Wide string (e.g., containing "račun")
+	CString wideAttachmentPath = rootDir + _T("\\") + fileName.c_str();
+	AfxMessageBox(_T("Attachment path: ") + wideAttachmentPath);
+
+	if (!wideAttachmentPath.IsEmpty()) {
+		if (_waccess(wideAttachmentPath, 0) == -1) {
+			AfxMessageBox(_T("Attachment file does not exist!"));
+			return;
+		}
+
+		MapiFileDesc fileDesc = { 0 };
+		fileDesc.nPosition = (ULONG)-1;
+
+		// Convert the wide string to ANSI
+		int ansiSizeNeeded = WideCharToMultiByte(CP_ACP, 0, wideAttachmentPath, -1, NULL, 0, NULL, NULL);
+		std::vector<char> ansiBuffer(ansiSizeNeeded);
+		WideCharToMultiByte(CP_ACP, 0, wideAttachmentPath, -1, ansiBuffer.data(), ansiSizeNeeded, NULL, NULL);
+
+		// Use the converted ANSI path
+		fileDesc.lpszPathName = _strdup(ansiBuffer.data());  // strdup to allocate memory for MAPI
+
+		message.nFileCount = 1;
+		message.lpFiles = &fileDesc;
+
+		AfxMessageBox(_T("Attachment added: ") + wideAttachmentPath);
+	}
+
+	AfxMessageBox(_T("Attempting to send email..."));
+
+	// Send the mail (without showing the draft UI)
+	ULONG mailResult = pMapiSendMail(0L, 0L, &message, MAPI_LOGON_UI, 0L);
+
+	AfxMessageBox(_T("Send mail result code: ") + CString(std::to_wstring(mailResult).c_str()));
+
+	if (mailResult != SUCCESS_SUCCESS) {
+		CString errorMsg;
+		switch (mailResult) {
+		case MAPI_E_FAILURE:
+			errorMsg = _T("General MAPI failure.");
+			break;
+		case MAPI_E_INSUFFICIENT_MEMORY:
+			errorMsg = _T("Insufficient memory to proceed.");
+			break;
+		case MAPI_E_LOGIN_FAILURE:
+			errorMsg = _T("Login failure.");
+			break;
+		case MAPI_E_USER_ABORT:
+			errorMsg = _T("User aborted the mail operation.");
+			break;
+		case MAPI_E_TOO_MANY_FILES:
+			errorMsg = _T("Too many file attachments.");
+			break;
+		case MAPI_E_TOO_MANY_RECIPIENTS:
+			errorMsg = _T("Too many recipients.");
+			break;
+		case MAPI_E_ATTACHMENT_NOT_FOUND:
+			errorMsg = _T("Attachment not found.");
+			break;
+		case MAPI_E_ATTACHMENT_OPEN_FAILURE:
+			errorMsg = _T("Attachment open failure.");
+			break;
+		default:
+			errorMsg.Format(_T("Unknown MAPI error code: %lu"), mailResult);
+			break;
+		}
+		AfxMessageBox(errorMsg);
+	}
+	else {
+		AfxMessageBox(_T("Mail sent successfully!"));
+	}
+
+	::FreeLibrary(hMapi);
+
+	// Free allocated memory for recipients
+	for (auto& rec : recipients) {
+		free(rec.lpszName);
+	}
+
+	// Move the file after successfully sending the email
+	if (mailResult == SUCCESS_SUCCESS) {
+		AfxMessageBox(_T("Moving file..."));
+		MoveFiles(fileName, !vat.IsEmpty());
+		AfxMessageBox(_T("File moved successfully."));
+	}
+}
+
+void FileHandler::GetRecipients()
+{
+	recipientCount = 0;
+	if (!dbContext || !dbContext->IsOpen()) {
+		AfxMessageBox(_T("Database context is not open."));
+		return;
+	}
+
+	CRecordset recordset(dbContext);
+	CString sqlQuery = _T("SELECT * FROM ReceiverMails");
+
+	try {
+		recordset.Open(CRecordset::forwardOnly, sqlQuery);
+	}
+	catch (CDBException* e) {
+		AfxMessageBox(_T("Error opening recordset for ReceiverMails."));
+		e->Delete();
+		return;
+	}
+
+	while (!recordset.IsEOF()) {
+		CString email;
+		recordset.GetFieldValue(_T("Email"), email);
+		recipient += email + _T(";");
+		recordset.MoveNext();
+		recipientCount++;
+	}
+	recordset.Close();
+	//AfxMessageBox(_T("Recipients loaded successfully."));
+}
+
+CString FileHandler::GetInvoiceRecipients(CString vat)
+{
+
+	//Incorrect syntax somewere here. Needs fixing. But only for release.
+	CRecordset recordset(dbContext);
+	CString sqlQuery = _T("SELECT (PrimaryEmail, SecondaryEmail) FROM Buyers WHERE Vat = '%s'", vat);
+	recordset.Open(CRecordset::forwardOnly, sqlQuery);
+	CString prim, second;
+	recordset.GetFieldValue(_T("PrimaryEmail"), prim);
+	recordset.GetFieldValue(_T("SecondaryEmail"), second);
+
+	prim = prim + _T(";") + second;
+	return prim;
+}
+
+
+CString FileHandler::GetSubject(std::wstring fileName)
+{
+	CString subject;
+	subject.Format(_T("Biomax %s"), fileName.c_str());
+
+	return subject;
+}
+
+CString FileHandler::GetMailBody()
+{
+	CRecordset recordset(dbContext);
+	CString sqlQuery;
+	sqlQuery = _T("SELECT * FROM Signatures");
+	recordset.Open(CRecordset::forwardOnly, sqlQuery);
+	while (!recordset.IsEOF()) 
+	{
+		CString temp;
+		recordset.GetFieldValue(_T("ID"), temp);
+		if (_ttoi(temp) == signatureId) {
+			CString content;
+			recordset.GetFieldValue(_T("Signature"), content);
+			return content;
+		}
+	}
+	recordset.Close();
+}
+
+void FileHandler::CheckAllFiles() {
+	for each (std::wstring file in files) {
+		std::wstring fileType = file.substr(0, 2);
+		if (fileType.compare(L"Ra") == 0) {
+			//DID_IT: Call python script
+			std::string extractedVat = CallPythonFile(file);
+			std::wstring wstrVat = std::wstring(extractedVat.begin(), extractedVat.end());
+			CString vat(wstrVat.c_str());
+
+			//DID_IT: Save to a database
+			SaveToDatabase(file, true, vat);
+			
+			//TODO: Forward info for mail processing
+			MailingProcessing(file, vat);
+
+			//DID_IT: Move file into a folder
+			MoveFiles(file, true);
+		}
+		else {
+			//DID_IT: Save to a database
+			SaveToDatabase(file, false);
+
+			//TODO: Forward info for mail processing
+			MailingProcessing(file);
+			
+			//DID_IT: Move file into a folder
+			MoveFiles(file, false);
+		}
+	}
 }
