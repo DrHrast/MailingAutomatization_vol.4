@@ -6,11 +6,15 @@
     * Configuration Propeties > C/C++ > General > Additional Include Directories > **"..\Python3x\include"**[^1]
     * Configuration Propeties >  Linker > General > Additional Library Directories > **"..\Python3x\libs"**[^1]
     * Configuration Propeties >  Linker > Input > Additional Dependencies > **python3x_d.lib;python3x.lib**[^1]
+    * Run python.exe, enter line **pip install PyPDF2**
     * Sometimes python files (python3.dll, python3_d.dll, python3x.dll[^1], python3x_d.dll[^1]) need to be moved to project folder
+    * In FileHandler.cpp enter python script directory in this line: *PyList_Append(sysPath, PyUnicode_FromString("..\\pythonScriptFolder"));*
+    * In FileHandler.cpp enter python site-pacages folder directory in this line: *PyList_Append(sysPath, PyUnicode_FromString("..\\Python\\Python312\\Lib\\site-packages"));*
+  * Create databse **PhoenixMailingDB**
   * Setup ODBC Data Source: ODBC Data Source Administrator > User DSN: Add a new Data Source with SQL Server
     * Name set to **PhoenixMailingDB**[^2]
     * Server set to local sql server
-    * First set default database to master and later after first run of the app change to **PhoenixMailingDB**[^3]
+    * Set default database to **PhoenixMailingDB**[^3]
 
 ## User Instructions:
   This is tab control based, single document MFC application. Tabs are as follows: Specific, BuyerData and AdditionalSettings.
