@@ -196,34 +196,22 @@ void CNWPproject7Dlg::OnTcnSelChangeIdPreviewPrev(NMHDR* pNMHDR, LRESULT* pResul
 }
 
 BOOL CNWPproject7Dlg::ConnectToDatabase() {
-	try {
-		// First try connecting using the default DSN
-		dbContext.Open(_T("PhoenixMailingDB"), FALSE, FALSE, _T("ODBC;DSN=PhoenixMailingDB"));
-	}
-	catch (CDBException* e) {
-		if (e->m_strError.Find(_T("DSN does not exist")) != -1) {
-			CString newDSN = PromptForDSN();
-			if (!newDSN.IsEmpty()) {
-				CString connectionString;
-				connectionString.Format(_T("ODBC;DSN=%s"), newDSN);
-				try {
-					dbContext.Open(_T("PhoenixMailingDB"), FALSE, FALSE, connectionString);
-				}
-				catch (CDBException* eRetry) {
-					AfxMessageBox(_T("Failed to connect with the new DSN."));
-					eRetry->Delete();
-					return FALSE;
-				}
-			}
-		}
-		else {
-			AfxMessageBox(_T("Database connection error."));
+	// Attempt to open the database connection
+	if (!dbContext.Open(_T("PhoenixMailingDB"), FALSE, FALSE, _T("ODBC;DSN=PhoenixMailingDB"))) {
+		// If the database doesn't exist or the connection fails, call DatabaseHandler
+		DatabaseHandler dbHandler;
+		dbHandler.CheckAndCreateDatabase(); // This method will create the database and tables
+
+		// Try reconnecting after database creation
+		if (!dbContext.Open(_T("PhoenixMailingDB"), FALSE, FALSE, _T("ODBC;DSN=PhoenixMailingDB"))) {
+			AfxMessageBox(_T("Failed to connect to PhoenixMailingDB after creation."));
 			return FALSE;
 		}
-		e->Delete();
 	}
+
 	return TRUE;
 }
+
 
 void CNWPproject7Dlg::CloseDatabase() {
 	if (dbContext.IsOpen()) {
