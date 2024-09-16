@@ -378,11 +378,11 @@ CString FileHandler::GetInvoiceRecipients(CString vat)
 
 	//Incorrect syntax somewere here. Needs fixing. But only for release.
 	CRecordset recordset(dbContext);
-	CString sqlQuery = _T("SELECT (PrimaryEmail, SecondaryEmail) FROM Buyers WHERE Vat = '%s'", vat);
+	CString sqlQuery = _T("SELECT (Primary_email, Secondary_email) FROM Buyers WHERE Vat = '%s'", vat);
 	recordset.Open(CRecordset::forwardOnly, sqlQuery);
 	CString prim, second;
-	recordset.GetFieldValue(_T("PrimaryEmail"), prim);
-	recordset.GetFieldValue(_T("SecondaryEmail"), second);
+	recordset.GetFieldValue(_T("Primary_email"), prim);
+	recordset.GetFieldValue(_T("Secondary_email"), second);
 
 	prim = prim + _T(";") + second;
 	return prim;

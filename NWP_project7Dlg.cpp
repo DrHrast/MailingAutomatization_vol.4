@@ -37,7 +37,6 @@ BEGIN_MESSAGE_MAP(CNWPproject7Dlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
-	ON_NOTIFY(TCN_SELCHANGE, AFX_ID_PREVIEW_PREV, &CNWPproject7Dlg::OnTcnSelChangeIdPreviewPrev)
 	ON_NOTIFY(TCN_SELCHANGE, IDC_TABCONTROL, &CNWPproject7Dlg::OnSelChangeTabControl)
 END_MESSAGE_MAP()
 
@@ -173,40 +172,65 @@ void CNWPproject7Dlg::OnSelChangeTabControl(NMHDR* pNMHDR, LRESULT* pResult) {
 	}
 }
 
-CString CNWPproject7Dlg::PromptForDSN() {
-	CString dsnName;
-	AfxMessageBox(_T("DSN connection failed. Please enter a valid DSN name."));
+BOOL CNWPproject7Dlg::ConnectToDatabase() {
+	try {
+		// Try connecting to the database
+		dbContext.Open(_T("PhoenixMailingDB"), FALSE, FALSE, _T("ODBC;DSN=PhoenixMailingDB"));
+		DatabaseHandler dbHandler(&dbContext);
 
-	// Use a simple modal dialog to prompt the user for DSN name
-	CDialog dlg(IDD_PROMPT_DSN);  // Create the dialog directly using the resource ID
-	dlg.DoModal();
+		// Check if required tables exist, and call the corresponding create function if missing
+		if (!TableExists(_T("GeneralSettings"))) {
+			dbHandler.CreateGeneralSettingsTable();
+		}
 
-	if (dlg.DoModal() == IDOK) {  // Only if the user clicks "OK"
-		// Get the text from the DSN edit control
-		CEdit* pEdit = (CEdit*)dlg.GetDlgItem(IDC_DSN_EDIT);
-		pEdit->GetWindowText(dsnName);
+		if (!TableExists(_T("Buyers"))) {
+			dbHandler.CreateBuyersTable();
+		}
+
+		if (!TableExists(_T("DocInfo"))) {
+			dbHandler.CreateDocInfoTable();
+		}
+
+		if (!TableExists(_T("ReceiverMails"))) {
+			dbHandler.CreateReceiverMailsTable();
+		}
+
+		if (!TableExists(_T("SenderMails"))) {
+			dbHandler.CreateSenderMailsTable();
+		}
+
+		if (!TableExists(_T("Signatures"))) {
+			dbHandler.CreateSignaturesTable();
+		}
+	}
+	catch (CDBException* e) {
+		AfxMessageBox(_T("Unable to connect to database."));
+		e->Delete();
+		return FALSE;
 	}
 
-	return dsnName;
+	return TRUE;
 }
 
+BOOL CNWPproject7Dlg::TableExists(const CString& tableName) {
+	CString query;
+	query.Format(_T("SELECT 1 FROM sys.tables WHERE name = '%s'"), tableName);
 
-void CNWPproject7Dlg::OnTcnSelChangeIdPreviewPrev(NMHDR* pNMHDR, LRESULT* pResult) {
-	*pResult = 0;
-}
+	CRecordset recordset(&dbContext);
+	try {
+		recordset.Open(CRecordset::forwardOnly, query, CRecordset::readOnly);
 
-BOOL CNWPproject7Dlg::ConnectToDatabase() {
-	// Attempt to open the database connection
-	if (!dbContext.Open(_T("PhoenixMailingDB"), FALSE, FALSE, _T("ODBC;DSN=PhoenixMailingDB"))) {
-		// If the database doesn't exist or the connection fails, call DatabaseHandler
-		DatabaseHandler dbHandler;
-		dbHandler.CheckAndCreateDatabase(); // This method will create the database and tables
-
-		// Try reconnecting after database creation
-		if (!dbContext.Open(_T("PhoenixMailingDB"), FALSE, FALSE, _T("ODBC;DSN=PhoenixMailingDB"))) {
-			AfxMessageBox(_T("Failed to connect to PhoenixMailingDB after creation."));
+		// If the recordset is empty, the table doesn't exist
+		if (recordset.IsEOF()) {
+			recordset.Close();
 			return FALSE;
 		}
+
+		recordset.Close();
+	}
+	catch (CDBException* e) {
+		e->Delete();
+		return FALSE;
 	}
 
 	return TRUE;

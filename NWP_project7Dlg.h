@@ -37,7 +37,6 @@ protected:
 	CDatabase dbContext;
 
 public:
-	afx_msg void OnTcnSelChangeIdPreviewPrev(NMHDR* pNMHDR, LRESULT* pResult);
 	CTabCtrl m_tabcontrol;
 	CMainTab main_tab;
 	CListTab list_tab;
@@ -45,7 +44,8 @@ public:
 	BOOL ConnectToDatabase();
 	void CloseDatabase();
 	CDatabase* GetDataBase();
-	CString PromptForDSN();
+
+	BOOL TableExists(const CString& tableName);
 
 	afx_msg void OnSelChangeTabControl(NMHDR* pNMHDR, LRESULT* pResult);
 
