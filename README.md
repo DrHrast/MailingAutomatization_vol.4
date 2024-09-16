@@ -7,7 +7,6 @@
     * Configuration Propeties >  Linker > General > Additional Library Directories > **"..\Python3x\libs"**[^1]
     * Configuration Propeties >  Linker > Input > Additional Dependencies > **python3x_d.lib;python3x.lib**[^1]
     * Sometimes python files (python3.dll, python3_d.dll, python3x.dll[^1], python3x_d.dll[^1]) need to be moved to project folder
-  * **C++ Language Standard** to ISO C++17 Standard (/std:c++17)
   * Setup ODBC Data Source: ODBC Data Source Administrator > User DSN: Add a new Data Source with SQL Server
     * Name set to **PhoenixMailingDB**[^2]
     * Server set to local sql server
