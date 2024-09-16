@@ -7,6 +7,7 @@
 #include "NWP_project7.h"
 #include "NWP_project7Dlg.h"
 #include "afxdialogex.h"
+#include "DatabaseHandler.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -172,25 +173,56 @@ void CNWPproject7Dlg::OnSelChangeTabControl(NMHDR* pNMHDR, LRESULT* pResult) {
 	}
 }
 
+CString CNWPproject7Dlg::PromptForDSN() {
+	CString dsnName;
+	AfxMessageBox(_T("DSN connection failed. Please enter a valid DSN name."));
+
+	// Use a simple modal dialog to prompt the user for DSN name
+	CDialog dlg(IDD_PROMPT_DSN);  // Create the dialog directly using the resource ID
+	dlg.DoModal();
+
+	if (dlg.DoModal() == IDOK) {  // Only if the user clicks "OK"
+		// Get the text from the DSN edit control
+		CEdit* pEdit = (CEdit*)dlg.GetDlgItem(IDC_DSN_EDIT);
+		pEdit->GetWindowText(dsnName);
+	}
+
+	return dsnName;
+}
+
+
 void CNWPproject7Dlg::OnTcnSelChangeIdPreviewPrev(NMHDR* pNMHDR, LRESULT* pResult) {
 	*pResult = 0;
 }
 
 BOOL CNWPproject7Dlg::ConnectToDatabase() {
-	try
-	{
-		if (!dbContext.IsOpen()) {
-			dbContext.Open(_T("PhoenixMailingDB"), FALSE, FALSE, _T("ODBC;DSN=PhoenixMailingDB"));
-			//AfxMessageBox(_T("Database connected successfully"));
+	try {
+		// First try connecting using the default DSN
+		dbContext.Open(_T("PhoenixMailingDB"), FALSE, FALSE, _T("ODBC;DSN=PhoenixMailingDB"));
+	}
+	catch (CDBException* e) {
+		if (e->m_strError.Find(_T("DSN does not exist")) != -1) {
+			CString newDSN = PromptForDSN();
+			if (!newDSN.IsEmpty()) {
+				CString connectionString;
+				connectionString.Format(_T("ODBC;DSN=%s"), newDSN);
+				try {
+					dbContext.Open(_T("PhoenixMailingDB"), FALSE, FALSE, connectionString);
+				}
+				catch (CDBException* eRetry) {
+					AfxMessageBox(_T("Failed to connect with the new DSN."));
+					eRetry->Delete();
+					return FALSE;
+				}
+			}
 		}
-			return TRUE;
-	}
-	catch (CDBException* e)
-	{
-		AfxMessageBox(_T("Database connection failed: ") + e->m_strError);
+		else {
+			AfxMessageBox(_T("Database connection error."));
+			return FALSE;
+		}
 		e->Delete();
-		return FALSE;
 	}
+	return TRUE;
 }
 
 void CNWPproject7Dlg::CloseDatabase() {

@@ -45,6 +45,7 @@ public:
 	BOOL ConnectToDatabase();
 	void CloseDatabase();
 	CDatabase* GetDataBase();
+	CString PromptForDSN();
 
 	afx_msg void OnSelChangeTabControl(NMHDR* pNMHDR, LRESULT* pResult);
 

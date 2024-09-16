@@ -5,7 +5,9 @@
 #define IDD_MAINTAB                     5
 #define IDD_LISTTAB                     9
 #define IDD_NWP_PROJECT7_DIALOG         102
+#define IDD_DIALOGBAR                   103
 #define IDD_SETTINGSTAB                 105
+#define IDD_PROMPT_DSN                  106
 #define IDR_MAINFRAME                   128
 #define IDC_TABCONTROL                  1000
 #define IDC_BROWSEROOTDIRECTORY         1003
@@ -60,12 +62,13 @@
 #define IDC_LIST1                       1042
 #define IDC_LISTRECEIVER                1042
 #define IDC_CHECKCOMBOBOXRECEIVER       1043
+#define IDC_DSN_EDIT                    1044
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        137
+#define _APS_NEXT_RESOURCE_VALUE        138
 #define _APS_NEXT_COMMAND_VALUE         32771
 #define _APS_NEXT_CONTROL_VALUE         1044
 #define _APS_NEXT_SYMED_VALUE           101

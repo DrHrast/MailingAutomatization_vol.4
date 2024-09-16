@@ -6,6 +6,7 @@
 #include "framework.h"
 #include "NWP_project7.h"
 #include "NWP_project7Dlg.h"
+#include "DatabaseHandler.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
